@@ -4,16 +4,1642 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Festa de Casamento – Cerimonial Sorriso</title>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.23.5/babel.min.js"></script>
 </head>
 <body>
   <div id="root"></div>
-  <script type="text/babel" data-type="module" src="FestaDeCasamento.jsx"></script>
   <script type="text/babel">
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(React.createElement(App));
+const { useState, useEffect, useRef, useCallback } = React;
+
+
+
+// ─────────────────────────────────────────────
+// CSS
+// ─────────────────────────────────────────────
+const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --sage:#AAB8A1;--sage-d:#7A8F73;--sage-l:#C4CFC0;
+  --gold:#C9A86A;--gold-d:#A8874E;--gold-l:#E2C98A;
+  --beige:#F5EDD9;--light:#FAF8F4;--gray:#E8E4E0;
+  --dark:#2A2A28;--mid:#6B6B65;--white:#fff;
+  --sh:0 2px 16px rgba(42,42,40,.08);--shl:0 8px 40px rgba(42,42,40,.13);
+  --r:14px;--rs:8px;--fd:'Cormorant Garamond',serif;--fb:'Jost',sans-serif;--tr:all .22s ease;
+}
+body{font-family:var(--fb);background:var(--light);color:var(--dark);min-height:100vh}
+.app{min-height:100vh;display:flex;flex-direction:column}
+.auth{min-height:100vh;display:grid;grid-template-columns:1fr 1fr}
+@media(max-width:768px){.auth{grid-template-columns:1fr}.auth-left{display:none}}
+.auth-left{background:linear-gradient(150deg,var(--sage) 0%,var(--sage-d) 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px;position:relative;overflow:hidden}
+.auth-left::before{content:'';position:absolute;top:-120px;right:-120px;width:400px;height:400px;border-radius:50%;background:rgba(201,168,106,.14)}
+.auth-left::after{content:'';position:absolute;bottom:-80px;left:-80px;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.07)}
+.auth-quote{font-family:var(--fd);font-size:1.6rem;font-style:italic;color:rgba(255,255,255,.9);text-align:center;line-height:1.6;position:relative;z-index:1;margin-top:32px}
+.auth-quote-attr{font-family:var(--fb);font-size:.8rem;color:rgba(255,255,255,.6);text-align:center;margin-top:12px;position:relative;z-index:1}
+.auth-right{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 40px;overflow-y:auto}
+.auth-form{width:100%;max-width:400px}
+.auth-title{font-family:var(--fd);font-size:2rem;font-weight:600;color:var(--dark);margin-bottom:6px}
+.auth-sub{color:var(--mid);font-size:.9rem;margin-bottom:32px}
+.field{margin-bottom:18px}
+.field label{display:block;font-size:.75rem;font-weight:600;color:var(--mid);text-transform:uppercase;letter-spacing:.09em;margin-bottom:7px}
+.field input,.field textarea,.field select{width:100%;padding:11px 15px;border:1.5px solid var(--gray);border-radius:var(--rs);font-family:var(--fb);font-size:.92rem;color:var(--dark);background:var(--white);transition:var(--tr);outline:none}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,106,.14)}
+.field textarea{resize:vertical;min-height:90px}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:11px 22px;border-radius:var(--rs);font-family:var(--fb);font-size:.88rem;font-weight:500;cursor:pointer;transition:var(--tr);border:none;outline:none;white-space:nowrap}
+.btn-primary{background:linear-gradient(135deg,var(--gold) 0%,var(--gold-d) 100%);color:#fff;box-shadow:0 4px 14px rgba(201,168,106,.32)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(201,168,106,.45)}
+.btn-primary:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.btn-secondary{background:#fff;color:var(--dark);border:1.5px solid var(--gray)}
+.btn-secondary:hover{border-color:var(--gold);color:var(--gold-d)}
+.btn-sage{background:var(--sage);color:#fff}
+.btn-sage:hover{background:var(--sage-d)}
+.btn-green{background:#16a34a;color:#fff}
+.btn-green:hover{background:#15803d}
+.btn-ghost{background:transparent;color:var(--mid);padding:8px 12px}
+.btn-ghost:hover{color:var(--gold-d)}
+.btn-danger{background:#FEF2F2;color:#DC2626;border:1.5px solid #FECACA}
+.btn-danger:hover{background:#DC2626;color:#fff}
+.btn-full{width:100%;justify-content:center}
+.btn-sm{padding:7px 14px;font-size:.8rem}
+.fc-link{color:var(--gold-d);cursor:pointer;font-weight:500;transition:var(--tr)}
+.fc-link:hover{color:var(--gold)}
+.hdr{background:#fff;border-bottom:1px solid var(--gray);padding:14px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:var(--sh)}
+@media(max-width:768px){.hdr{padding:10px 16px}}
+.hdr-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.user-badge{display:flex;align-items:center;gap:8px;padding:7px 14px;background:var(--beige);border-radius:50px}
+.user-av{width:30px;height:30px;background:var(--sage);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:.8rem;flex-shrink:0}
+.user-name{font-size:.85rem;color:var(--dark);font-weight:500}
+@media(max-width:480px){.user-name{display:none}}
+.page{max-width:1200px;margin:0 auto;padding:40px 32px}
+@media(max-width:768px){.page{padding:24px 16px}}
+.page-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:16px}
+.page-title{font-family:var(--fd);font-size:2.2rem;font-weight:500;color:var(--dark)}
+.page-sub{color:var(--mid);font-size:.9rem;margin-top:4px}
+.grid-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:22px}
+@media(max-width:768px){.grid-cards{grid-template-columns:1fr}}
+.card{background:#fff;border-radius:var(--r);padding:26px;box-shadow:var(--sh);border:1px solid rgba(170,184,161,.18);transition:var(--tr)}
+.card:hover{transform:translateY(-2px);box-shadow:var(--shl)}
+.card-names{font-family:var(--fd);font-size:1.4rem;font-weight:600;color:var(--dark);margin-bottom:4px}
+.card-ring{color:var(--gold);margin:0 6px}
+.card-meta{display:flex;flex-direction:column;gap:5px;margin:14px 0}
+.card-meta-row{display:flex;align-items:center;gap:7px;font-size:.83rem;color:var(--mid)}
+.badge{display:inline-flex;align-items:center;padding:3px 11px;border-radius:50px;font-size:.72rem;font-weight:600}
+.badge-draft{background:#FEF3C7;color:#92400E}
+.badge-done{background:#DCFCE7;color:#166534}
+.card-actions{display:flex;flex-wrap:wrap;gap:7px;padding-top:16px;border-top:1px solid var(--gray)}
+.icon-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:var(--rs);font-size:.78rem;font-weight:500;cursor:pointer;transition:var(--tr);border:none;background:var(--light);color:var(--mid)}
+.icon-btn:hover{background:var(--beige);color:var(--dark)}
+.icon-btn.gold{background:rgba(201,168,106,.1);color:var(--gold-d)}
+.icon-btn.gold:hover{background:var(--gold);color:#fff}
+.icon-btn.sage{background:rgba(170,184,161,.12);color:var(--sage-d)}
+.icon-btn.sage:hover{background:var(--sage);color:#fff}
+.icon-btn.green{background:rgba(22,163,74,.1);color:#16a34a}
+.icon-btn.green:hover{background:#16a34a;color:#fff}
+.icon-btn.danger:hover{background:#FEE2E2;color:#DC2626}
+.empty{grid-column:1/-1;text-align:center;padding:80px 20px}
+.empty-icon{font-size:4rem;margin-bottom:18px}
+.empty-title{font-family:var(--fd);font-size:1.8rem;color:var(--dark);margin-bottom:8px}
+.empty-text{color:var(--mid);margin-bottom:24px;font-size:.95rem}
+.form-layout{display:grid;grid-template-columns:250px 1fr;min-height:calc(100vh - 70px)}
+@media(max-width:900px){.form-layout{grid-template-columns:1fr}}
+.form-sidebar{background:#fff;border-right:1px solid var(--gray);padding:28px 16px;position:sticky;top:70px;height:calc(100vh - 70px);overflow-y:auto}
+@media(max-width:900px){.form-sidebar{display:none}}
+.fsb-title{font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--mid);margin-bottom:14px;padding:0 6px}
+.fsb-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:var(--rs);cursor:pointer;transition:var(--tr);font-size:.82rem;color:var(--mid);margin-bottom:2px}
+.fsb-item:hover{background:var(--beige);color:var(--dark)}
+.fsb-item.active{background:var(--sage);color:#fff}
+.fsb-num{width:20px;height:20px;border-radius:50%;background:var(--gray);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0}
+.fsb-item.active .fsb-num{background:rgba(255,255,255,.3)}
+.form-main{padding:36px;overflow-y:auto}
+@media(max-width:768px){.form-main{padding:18px 14px}}
+.fsec{background:#fff;border-radius:var(--r);padding:28px;margin-bottom:20px;box-shadow:var(--sh);border:1px solid rgba(170,184,161,.13);scroll-margin-top:20px}
+.fsec-title{font-family:var(--fd);font-size:1.45rem;font-weight:600;color:var(--dark);display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.fsec-bar{width:36px;height:2px;background:linear-gradient(90deg,var(--gold),var(--sage));border-radius:2px;margin-bottom:18px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:580px){.g2{grid-template-columns:1fr}}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+@media(max-width:680px){.g3{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){.g3{grid-template-columns:1fr}}
+.chk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:9px;margin-bottom:10px}
+.chk-item{display:flex;align-items:center;gap:9px;padding:9px 13px;border-radius:var(--rs);border:1.5px solid var(--gray);cursor:pointer;transition:var(--tr);font-size:.83rem;color:var(--mid);user-select:none}
+.chk-item:hover{border-color:var(--sage);background:rgba(170,184,161,.07)}
+.chk-item.on{border-color:var(--sage);background:rgba(170,184,161,.14);color:var(--dark)}
+.chk-item input{accent-color:var(--sage-d);width:15px;height:15px;cursor:pointer;flex-shrink:0}
+.supp-card{border:1px solid var(--gray);border-radius:var(--rs);padding:18px;margin-bottom:14px;position:relative;background:var(--light)}
+.supp-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.supp-label{font-family:var(--fd);font-size:1rem;font-weight:600;color:var(--dark)}
+.sched-page{padding:36px;max-width:1100px;margin:0 auto}
+@media(max-width:768px){.sched-page{padding:18px 14px}}
+.sched-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:14px}
+.sched-doc{background:#fff;border-radius:var(--r);padding:40px;box-shadow:var(--shl)}
+@media(max-width:640px){.sched-doc{padding:20px 14px}}
+.doc-hdr{text-align:center;margin-bottom:32px;padding-bottom:22px;border-bottom:2px solid var(--beige)}
+.doc-title{font-family:var(--fd);font-size:2rem;font-weight:600;color:var(--gold-d);margin-bottom:2px}
+.doc-company{font-family:var(--fd);font-size:1rem;color:var(--mid);font-style:italic;margin-bottom:18px}
+.doc-info{display:flex;justify-content:center;flex-wrap:wrap;gap:22px}
+.doc-info-item{display:flex;align-items:center;gap:6px;font-size:.83rem;color:var(--mid)}
+.sched-table{width:100%;border-collapse:collapse}
+.sched-table thead th{background:var(--sage);color:#fff;padding:11px 15px;text-align:left;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+.sched-table thead th:first-child{border-radius:8px 0 0 0}
+.sched-table thead th:last-child{border-radius:0 8px 0 0}
+.sched-row{border-bottom:1px solid var(--gray);transition:var(--tr)}
+.sched-row:hover{background:rgba(170,184,161,.05)}
+.sched-row.drag-over{border-top:2px solid var(--gold)}
+.sched-row.dragging{opacity:.45}
+.sched-row td{padding:10px 14px;font-size:.88rem;vertical-align:top}
+.sched-row td:first-child{font-family:var(--fb);font-weight:700;color:var(--dark);white-space:nowrap;font-size:.9rem;width:90px}
+.sched-row td:nth-child(3){width:130px}
+.sched-row td:last-child{width:40px;text-align:center}
+.cell-in{width:100%;border:none;background:transparent;font-family:var(--fb);font-size:.88rem;color:var(--dark);padding:4px 6px;border-radius:4px;transition:var(--tr);resize:none}
+.cell-in:hover{background:rgba(201,168,106,.08);cursor:text}
+.cell-in:focus{outline:none;background:var(--beige);box-shadow:0 0 0 2px var(--gold)}
+.add-row-bar{display:flex;gap:10px;align-items:flex-end;padding:14px;background:var(--light);border-radius:0 0 8px 8px;border:1px solid var(--gray);border-top:none;flex-wrap:wrap}
+.add-row-bar .field{margin-bottom:0;flex:1;min-width:100px}
+.overlay{position:fixed;inset:0;background:rgba(42,42,40,.52);backdrop-filter:blur(4px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px}
+.modal{background:#fff;border-radius:var(--r);padding:34px;max-width:560px;width:100%;box-shadow:var(--shl);animation:mIn .2s ease;max-height:90vh;overflow-y:auto}
+.modal-lg{max-width:760px}
+@keyframes mIn{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal-title{font-family:var(--fd);font-size:1.6rem;font-weight:600;color:var(--dark);margin-bottom:6px}
+.modal-sub{color:var(--mid);font-size:.88rem;margin-bottom:24px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:24px}
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:18px}
+.spinner{width:38px;height:38px;border:3px solid var(--gray);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.gen-box{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 40px;text-align:center}
+.gen-rings{position:relative;width:72px;height:72px;margin:0 auto 24px}
+.gen-ring{position:absolute;inset:0;border-radius:50%;border:3px solid transparent;animation:gring 1.4s cubic-bezier(.5,0,.5,1) infinite}
+.gen-ring:nth-child(1){border-top-color:var(--gold)}
+.gen-ring:nth-child(2){border-right-color:var(--sage);animation-delay:-.35s}
+.gen-ring:nth-child(3){border-bottom-color:var(--gold-d);animation-delay:-.7s}
+@keyframes gring{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:22px;right:22px;background:var(--dark);color:#fff;padding:11px 20px;border-radius:var(--rs);font-size:.85rem;z-index:2000;display:flex;align-items:center;gap:9px;animation:tIn .25s ease;box-shadow:var(--shl)}
+.toast.success{background:#166534}
+.toast.error{background:#DC2626}
+@keyframes tIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.autosave{display:flex;align-items:center;gap:6px;font-size:.73rem;color:var(--mid)}
+.as-dot{width:6px;height:6px;border-radius:50%;background:#22C55E}
+.as-dot.saving{background:var(--gold);animation:pulse 1s ease infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.footer{text-align:center;padding:18px;color:var(--mid);font-size:.78rem;border-top:1px solid var(--gray);background:#fff;font-family:var(--fd);font-style:italic;margin-top:auto}
+hr.div{border:none;border-top:1px solid var(--gray);margin:20px 0}
+.admin-tabs{display:flex;gap:4px;margin-bottom:28px;border-bottom:2px solid var(--gray);padding-bottom:0}
+.admin-tab{padding:10px 20px;cursor:pointer;font-size:.88rem;font-weight:500;color:var(--mid);border-bottom:2px solid transparent;margin-bottom:-2px;transition:var(--tr)}
+.admin-tab:hover{color:var(--dark)}
+.admin-tab.active{color:var(--gold-d);border-bottom-color:var(--gold)}
+.users-table{width:100%;border-collapse:collapse;background:#fff;border-radius:var(--r);overflow:hidden;box-shadow:var(--sh)}
+.users-table th{background:var(--sage);color:#fff;padding:11px 16px;text-align:left;font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.users-table td{padding:11px 16px;border-bottom:1px solid var(--gray);font-size:.84rem;vertical-align:middle}
+.users-table tr:last-child td{border-bottom:none}
+.users-table tr:hover td{background:rgba(170,184,161,.04)}
+.exp-ok{color:#166534;background:#DCFCE7;padding:3px 10px;border-radius:50px;font-size:.72rem;font-weight:600}
+.exp-warn{color:#92400E;background:#FEF3C7;padding:3px 10px;border-radius:50px;font-size:.72rem;font-weight:600}
+.exp-expired{color:#DC2626;background:#FEE2E2;padding:3px 10px;border-radius:50px;font-size:.72rem;font-weight:600}
+.exp-admin{color:#A8874E;background:#FEF9EC;padding:3px 10px;border-radius:50px;font-size:.72rem;font-weight:600}
+.usage-bar-wrap{background:var(--gray);border-radius:50px;height:8px;overflow:hidden;margin-top:4px}
+.usage-bar{height:8px;border-radius:50px;transition:width .6s ease}
+.usage-bar.ok{background:var(--sage)}
+.usage-bar.warn{background:var(--gold)}
+.usage-bar.full{background:#DC2626}
+.plan-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin:20px 0}
+.plan-card{border:2px solid var(--gray);border-radius:var(--r);padding:20px;cursor:pointer;transition:var(--tr);text-align:center;position:relative}
+.plan-card:hover{border-color:var(--sage);background:rgba(170,184,161,.06)}
+.plan-card.selected{border-color:var(--gold);background:rgba(201,168,106,.08)}
+.plan-card .plan-name{font-family:var(--fd);font-size:1.2rem;font-weight:600;margin-bottom:6px}
+.plan-card .plan-price{font-size:1.5rem;font-weight:700;color:var(--gold-d);margin-bottom:4px}
+.plan-card .plan-events{font-size:.82rem;color:var(--mid);margin-bottom:8px}
+.plan-card .plan-discount{position:absolute;top:10px;right:10px;background:var(--sage);color:#fff;padding:2px 8px;border-radius:50px;font-size:.68rem;font-weight:700}
+.plan-active-box{background:linear-gradient(135deg,rgba(170,184,161,.15),rgba(201,168,106,.12));border:1px solid rgba(201,168,106,.3);border-radius:var(--r);padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.usage-mini{font-size:.78rem;color:var(--mid);margin-top:2px}
+.wa-panel{background:#fff;border-radius:var(--r);padding:28px;box-shadow:var(--sh);margin-top:24px}
+.wa-panel-title{font-family:var(--fd);font-size:1.4rem;font-weight:600;color:var(--dark);margin-bottom:6px}
+.wa-supp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin:18px 0}
+.wa-supp-item{border:1.5px solid var(--gray);border-radius:var(--rs);padding:12px 14px;cursor:pointer;transition:var(--tr);display:flex;align-items:center;gap:10px;font-size:.85rem}
+.wa-supp-item:hover{border-color:var(--sage)}
+.wa-supp-item.sel{border-color:#16a34a;background:rgba(22,163,74,.07)}
+.wa-supp-item input{accent-color:#16a34a;flex-shrink:0}
+.wa-preview{background:var(--light);border:1px solid var(--gray);border-radius:var(--rs);padding:16px;font-size:.82rem;line-height:1.7;white-space:pre-wrap;max-height:220px;overflow-y:auto;font-family:monospace;color:var(--dark)}
+@media print{#fc-preview-bar{display:none!important}body>*:not(#fc-print-preview){display:none!important}#fc-print-preview{position:static!important;overflow:visible!important;padding:10mm!important}}
+#fc-print-preview{display:none}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:var(--light)}
+::-webkit-scrollbar-thumb{background:var(--sage-l);border-radius:3px}
+@media print{.hdr,.form-sidebar,.sched-hdr,.icon-btn,.add-row-bar,.footer,.btn{display:none!important}.sched-doc{box-shadow:none!important;padding:0!important}}
+`;
+
+// ─────────────────────────────────────────────
+// UTILITIES & CONSTANTS
+// ─────────────────────────────────────────────
+const uid = () => Math.random().toString(36).slice(2, 11);
+const fmtDate = (d) => { if (!d) return "—"; const [y, m, day] = d.split("-"); return `${day}/${m}/${y}`; };
+const now = () => new Date().toISOString();
+const addDays = (d, n) => new Date(new Date(d).getTime() + n * 864e5).toISOString();
+const daysLeft = (exp) => { if (!exp) return Infinity; return Math.ceil((new Date(exp) - new Date()) / 864e5); };
+const isExpired = (u) => { if (u.isAdmin || !u.expiresAt) return false; return daysLeft(u.expiresAt) <= 0; };
+
+const PLANS = [
+  { id: "single",  name: "Avulso",   events: 1,  days: 30,  basePrice: 9.90, discount: 0,  get price() { return +(this.basePrice * this.events * (1 - this.discount/100)).toFixed(2); } },
+  { id: "trio",    name: "Trio",      events: 3,  days: 30,  basePrice: 9.90, discount: 5,  get price() { return +(this.basePrice * this.events * (1 - this.discount/100)).toFixed(2); } },
+  { id: "quintet", name: "Quinteto",  events: 5,  days: 30,  basePrice: 9.90, discount: 10, get price() { return +(this.basePrice * this.events * (1 - this.discount/100)).toFixed(2); } },
+  { id: "annual",  name: "Anual",     events: 60, days: 365, basePrice: 9.90, discount: 20, get price() { return +(this.basePrice * this.events * (1 - this.discount/100)).toFixed(2); } },
+];
+
+// Keywords to match schedule items per supplier category
+const CATEGORY_KEYWORDS = {
+  "Buffet":          ["jantar","almoço","entrada","serviço","garçom","refeição","buffet","caldo","sobremesa","café","prato","maître","banquete","mesa posta","saída das entradas"],
+  "Drinks":          ["drink","bar","chopp","bebida","brinde","taça","espumante","drinks","bar de"],
+  "Chopp":           ["chopp","chope","cerveja","drinks","bar"],
+  "DJ":              ["dj","música","som","playlist","mix","balada","pista"],
+  "Banda":           ["banda","música","repertório","palco","cantor","passagem de som","teste de som"],
+  "Sonorização":     ["som","microfone","sonorização","teste de som","passagem de som","técnico de som"],
+  "Decoração":       ["decoração","decorador","montagem","flores","arranjo","desmontagem","montagem da decoração"],
+  "Foto":            ["foto","fotógrafo","making of","sessão de fotos","cobertura fotográfica","fotos protocolares","fotos","fotografia"],
+  "Filmagem":        ["filmagem","filmmaker","vídeo","love story","cobertura","filme"],
+  "Celebrante":      ["cerimônia","celebrante","cortejo","altar","entrada dos noivos","encerramento da cerimônia"],
+  "Cabine de fotos": ["cabine","cabine de foto"],
+  "Plataforma 360°": ["360","plataforma 360"],
+  "Segurança":       ["segurança","acesso","portaria","entrada","credenciamento"],
+  "Espaço":          ["espaço","salão","abertura","entrega","espaço kids","desmontagem geral"],
+  "Doces":           ["doce","candy","mesa de doces","doceria"],
+  "Bolo":            ["bolo","corte do bolo","servido na mesa","bolo cenográfico"],
+  "Lembrancinhas":   ["lembrancinha","lembrança","distribuição de lembrancinhas","lembrancinhas"],
+};
+
+const filterItemsForCategory = (items, category) => {
+  const kws = CATEGORY_KEYWORDS[category] || [];
+  if (!kws.length) return items;
+  return items.filter(it =>
+    kws.some(k => (it.activity || "").toLowerCase().includes(k) || (it.responsible || "").toLowerCase().includes(k))
+  );
+};
+
+// Storage
+const store = {
+  async get(k)    { try { const r = await window.storage.get(k); return r ? JSON.parse(r.value) : null; } catch { return null; } },
+  async set(k, v) { try { await window.storage.set(k, JSON.stringify(v)); } catch {} },
+  async del(k)    { try { await window.storage.delete(k); } catch {} },
+  async list(p)   { try { const r = await window.storage.list(p); return r?.keys || []; } catch { return []; } },
+};
+
+// ─────────────────────────────────────────────
+// LOGO
+// ─────────────────────────────────────────────
+const LOGO_SRC = "data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCATiBOIDASIAAhEBAxEB/8QAHQABAAICAwEBAAAAAAAAAAAAAAYHBQgCAwQBCf/EAFQQAQABAwMABQYICwIKCgIDAAABAgMEBQYRBxIhMUETUWFxgZEIFCI2obGy0RUjMjNCUmJyc3TBFpQkNENUVYKDkpOiRGNkdYSzwtLh8CbxJVPi/8QAGgEBAAMBAQEAAAAAAAAAAAAAAAECBAMFBv/EADIRAQACAgEDAgUCBQQDAQAAAAABAgMRBBIhMUFRBRMiMjNhcRQjQoGRUqGx8BU00cH/2gAMAwEAAhEDEQA/ANMgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA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AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD//Z";
+
+function Logo({ size="md", light=false }) {
+  const sc = size==="lg"?1.8:size==="sm"?0.7:1;
+  const h = Math.round(52*sc);
+  return (
+    <div style={{display:"flex",alignItems:"center",gap:Math.round(10*sc)}}>
+      <img
+        src={LOGO_SRC}
+        alt="A Central do Casamento"
+        style={{height:h,width:"auto",objectFit:"contain",
+          filter: light ? "brightness(0) invert(1)" : "none"}}
+      />
+      <div>
+        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:Math.round(15*sc),fontWeight:600,color:light?"#fff":"#2A2A28",letterSpacing:"0.02em",lineHeight:1.1}}>Festa de Casamento</div>
+        <div style={{fontFamily:"'Jost',sans-serif",fontSize:Math.round(8*sc),color:light?"rgba(255,255,255,.7)":"#6B6B65",letterSpacing:"0.08em",textTransform:"uppercase",lineHeight:1.3}}>Silvana Santana · Cerimonial Sorriso</div>
+      </div>
+    </div>
+  );
+}
+
+function Toast({msg,type}) {
+  if(!msg) return null;
+  return <div className={`toast ${type}`}>{type==="success"?"✓":type==="error"?"✗":"ℹ"} {msg}</div>;
+}
+
+// ─────────────────────────────────────────────
+// PLAN SELECTOR MODAL
+// ─────────────────────────────────────────────
+function PlanSelector({ userName, onSelect, onClose }) {
+  const [chosen, setChosen] = useState(null);
+  const [showMsg, setShowMsg] = useState(false);
+
+  const ADMIN_WA = "5566999999999"; // ← Troque pelo seu número WhatsApp
+
+  const buildWaMsg = (plan) => {
+    const p = PLANS.find(x => x.id === plan);
+    return `Olá, Silvana! Sou ${userName} e gostaria de contratar o plano *${p.name}* do sistema Festa de Casamento.\n\nDetalhes:\n- Plano: ${p.name}\n- Cronogramas: ${p.events}\n- Validade: ${p.days} dias\n- Valor: R$ ${p.price.toFixed(2).replace(".",",")}\n\nAguardo a confirmação. Obrigado(a)!`;
+  };
+
+  const handleRequest = () => {
+    if (!chosen) return;
+    const msg = buildWaMsg(chosen);
+    const url = `https://wa.me/${ADMIN_WA}?text=${encodeURIComponent(msg)}`;
+    window.open(url, "_blank");
+    setShowMsg(true);
+  };
+
+  return (
+    <div className="overlay">
+      <div className="modal modal-lg">
+        <div className="modal-title">Escolha seu Plano</div>
+        <div className="modal-sub">Selecione a quantidade de cronogramas que precisará. Não acumulam para o próximo período.</div>
+
+        <div className="plan-grid">
+          {PLANS.map(p => (
+            <div key={p.id} className={`plan-card${chosen===p.id?" selected":""}`} onClick={() => setChosen(p.id)}>
+              {p.discount > 0 && <div className="plan-discount">-{p.discount}%</div>}
+              <div className="plan-name">{p.name}</div>
+              <div className="plan-price">R$ {p.price.toFixed(2).replace(".",",")}</div>
+              <div className="plan-events">{p.events} cronograma{p.events>1?"s":""} · {p.days} dias</div>
+              <div style={{fontSize:".72rem",color:"var(--mid)"}}>R$ {p.basePrice.toFixed(2).replace(".",",")} por cronograma{p.discount>0?` (${p.discount}% off)`:""}</div>
+            </div>
+          ))}
+        </div>
+
+        {!showMsg ? (
+          <>
+            <div style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"var(--rs)",padding:"12px 16px",fontSize:".83rem",color:"#166534",marginBottom:18}}>
+              💬 Ao clicar em "Solicitar via WhatsApp", você será direcionado para conversa com Silvana para confirmar o pagamento. O plano é ativado após confirmação.
+            </div>
+            <div className="modal-actions">
+              {onClose && <button className="btn btn-ghost" onClick={onClose}>Agora não</button>}
+              <button className="btn btn-green" disabled={!chosen} onClick={handleRequest}>
+                <span>📲</span> Solicitar via WhatsApp
+              </button>
+            </div>
+          </>
+        ) : (
+          <div style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"var(--rs)",padding:"16px",textAlign:"center"}}>
+            <div style={{fontSize:"1.5rem",marginBottom:8}}>✅</div>
+            <div style={{fontWeight:600,marginBottom:4}}>Mensagem enviada!</div>
+            <div style={{fontSize:".85rem",color:"var(--mid)",marginBottom:16}}>Assim que o pagamento for confirmado, Silvana ativará seu plano.</div>
+            {onClose && <button className="btn btn-primary" onClick={onClose}>Fechar</button>}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// AUTH SCREEN
+// ─────────────────────────────────────────────
+function AuthScreen({ onLogin }) {
+  const [mode, setMode] = useState("login");
+  const [form, setForm] = useState({name:"",email:"",password:"",confirm:""});
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [ok, setOk] = useState("");
+  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+
+  const handleLogin = async () => {
+    setErr(""); setLoading(true);
+    const users = await store.get("fc-users") || [];
+    const user = users.find(u => u.email===form.email && u.password===form.password);
+    if (!user) { setErr("E-mail ou senha incorretos."); setLoading(false); return; }
+    if (isExpired(user)) { setErr("Seu acesso expirou. Entre em contato com a administradora para renovar."); setLoading(false); return; }
+    await store.set("fc-session", {userId: user.id});
+    onLogin(user); setLoading(false);
+  };
+
+  const handleRegister = async () => {
+    setErr("");
+    if (!form.name||!form.email||!form.password) { setErr("Preencha todos os campos."); return; }
+    if (form.password!==form.confirm) { setErr("As senhas não conferem."); return; }
+    if (form.password.length<6) { setErr("Senha deve ter ao menos 6 caracteres."); return; }
+    setLoading(true);
+    const users = await store.get("fc-users") || [];
+    if (users.find(u=>u.email===form.email)) { setErr("E-mail já cadastrado."); setLoading(false); return; }
+    const isFirst = users.length===0;
+    const createdAt = now();
+    const user = {
+      id: uid(), name: form.name, email: form.email, password: form.password, createdAt,
+      isAdmin: isFirst,
+      expiresAt: isFirst ? null : addDays(createdAt, 30),
+      plan: isFirst ? {id:"admin", events:9999, used:0, activatedAt: createdAt, expiresAt: null} : null,
+    };
+    await store.set("fc-users", [...users, user]);
+    await store.set("fc-session", {userId: user.id});
+    onLogin(user); setLoading(false);
+  };
+
+  const handleForgot = async () => {
+    setErr("");
+    if (!form.email) { setErr("Digite seu e-mail."); return; }
+    const users = await store.get("fc-users") || [];
+    const user = users.find(u=>u.email===form.email);
+    if (!user) { setErr("E-mail não encontrado."); return; }
+    setOk(`Senha: ${user.password}`);
+  };
+
+  const errBox = (msg) => msg ? <div style={{color:"#DC2626",fontSize:".85rem",marginBottom:14,padding:"10px 14px",background:"#FEF2F2",borderRadius:8}}>{msg}</div> : null;
+  const okBox  = (msg) => msg ? <div style={{color:"#166534",fontSize:".85rem",marginBottom:14,padding:"10px 14px",background:"#DCFCE7",borderRadius:8}}>{msg}</div> : null;
+
+  return (
+    <div className="auth">
+      <div className="auth-left">
+        <Logo size="lg" light />
+        <div className="auth-quote">"Cada detalhe do seu casamento merece ser vivido com emoção e planejado com perfeição."</div>
+        <div className="auth-quote-attr">— Silvana Santana</div>
+      </div>
+      <div className="auth-right">
+        <div className="auth-form">
+          {mode==="login" && <>
+            <div className="auth-title">Bem-vinda de volta</div>
+            <div className="auth-sub">Acesse sua conta para gerenciar seus casamentos</div>
+            {errBox(err)}
+            <div className="field"><label>E-mail</label><input type="email" value={form.email} onChange={e=>set("email",e.target.value)} placeholder="seu@email.com"/></div>
+            <div className="field"><label>Senha</label><input type="password" value={form.password} onChange={e=>set("password",e.target.value)} placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&handleLogin()}/></div>
+            <button className="btn btn-primary btn-full" onClick={handleLogin} disabled={loading}>{loading?"Entrando…":"Entrar"}</button>
+            <div style={{textAlign:"center",marginTop:20,fontSize:".85rem",color:"var(--mid)"}}>
+              <span className="fc-link" onClick={()=>{setMode("forgot");setErr("");}}>Esqueci minha senha</span>
+              {" · "}
+              <span className="fc-link" onClick={()=>{setMode("register");setErr("");}}>Criar conta</span>
+            </div>
+            <hr className="div" style={{marginTop:28}}/>
+            <div style={{textAlign:"center"}}>
+              <div style={{fontSize:".75rem",color:"var(--mid)",marginBottom:10}}>Problemas para entrar? Limpe os dados e crie uma nova conta.</div>
+              <button className="btn btn-danger btn-sm" onClick={async()=>{
+                if (!window.confirm("Isso apagará TODAS as contas e casamentos salvos. Continuar?")) return;
+                const keys = await store.list("fc-");
+                for (const k of keys) await store.del(k);
+                await store.del("fc-session");
+                await store.del("fc-users");
+                setErr(""); setOk(""); setForm({name:"",email:"",password:"",confirm:""});
+                alert("Dados apagados. Agora crie uma nova conta.");
+              }}>🗑 Limpar todos os dados</button>
+            </div>
+          </>}
+          {mode==="register" && <>
+            <div className="auth-title">Criar conta</div>
+            <div className="auth-sub">Comece a organizar seus casamentos agora</div>
+            {errBox(err)}
+            <div className="field"><label>Nome completo</label><input value={form.name} onChange={e=>set("name",e.target.value)} placeholder="Seu nome"/></div>
+            <div className="field"><label>E-mail</label><input type="email" value={form.email} onChange={e=>set("email",e.target.value)} placeholder="seu@email.com"/></div>
+            <div className="field"><label>Senha</label><input type="password" value={form.password} onChange={e=>set("password",e.target.value)} placeholder="Mínimo 6 caracteres"/></div>
+            <div className="field"><label>Confirmar senha</label><input type="password" value={form.confirm} onChange={e=>set("confirm",e.target.value)} placeholder="Repita a senha"/></div>
+            <button className="btn btn-primary btn-full" onClick={handleRegister} disabled={loading}>{loading?"Criando…":"Criar conta"}</button>
+            <div style={{textAlign:"center",marginTop:18,fontSize:".85rem"}}>
+              <span className="fc-link" onClick={()=>{setMode("login");setErr("");}}>Já tenho conta</span>
+            </div>
+          </>}
+          {mode==="forgot" && <>
+            <div className="auth-title">Recuperar senha</div>
+            <div className="auth-sub">Informe o e-mail cadastrado</div>
+            {errBox(err)}{okBox(ok)}
+            <div className="field"><label>E-mail</label><input type="email" value={form.email} onChange={e=>set("email",e.target.value)} placeholder="seu@email.com"/></div>
+            <button className="btn btn-primary btn-full" onClick={handleForgot}>Recuperar</button>
+            <div style={{textAlign:"center",marginTop:18,fontSize:".85rem"}}>
+              <span className="fc-link" onClick={()=>{setMode("login");setErr("");setOk("");}}>Voltar ao login</span>
+            </div>
+          </>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// USAGE WIDGET
+// ─────────────────────────────────────────────
+function UsageWidget({ user }) {
+  if (user.isAdmin) return <span className="exp-admin">👑 Admin Vitalício</span>;
+  const p = user.plan;
+  if (!p) return (
+    <span style={{fontSize:".8rem",color:"#DC2626",background:"#FEE2E2",padding:"3px 10px",borderRadius:"50px",fontWeight:600}}>
+      Sem plano ativo
+    </span>
+  );
+  const used = p.used || 0, total = p.events;
+  const pct = Math.min((used/total)*100, 100);
+  const cls = pct>=100?"full":pct>=75?"warn":"ok";
+  const d = daysLeft(p.expiresAt);
+  return (
+    <div style={{minWidth:180}}>
+      <div style={{display:"flex",justifyContent:"space-between",fontSize:".75rem",color:"var(--mid)",marginBottom:3}}>
+        <span>📋 Cronogramas: <strong style={{color:"var(--dark)"}}>{used}/{total}</strong></span>
+        {p.expiresAt && <span style={{color:d<=7?"#DC2626":"var(--mid)"}}>{d>0?`${d}d`:"Exp."}</span>}
+      </div>
+      <div className="usage-bar-wrap"><div className={`usage-bar ${cls}`} style={{width:`${pct}%`}}/></div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// ADMIN PANEL
+// ─────────────────────────────────────────────
+function AdminPanel({ currentUser }) {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [editPlan, setEditPlan] = useState(null); // {userId, planId, events}
+  const [confirmDel, setConfirmDel] = useState(null);
+
+  const load = async () => { setLoading(true); setUsers(await store.get("fc-users")||[]); setLoading(false); };
+  useEffect(() => { load(); }, []);
+
+  const save = async (updated) => { await store.set("fc-users", updated); setUsers(updated); };
+
+  const activatePlan = async (userId, planId, customEvents) => {
+    const plan = PLANS.find(p=>p.id===planId);
+    if (!plan) return;
+    const events = customEvents || plan.events;
+    const activatedAt = now();
+    const expiresAt = addDays(activatedAt, plan.days);
+    const updated = users.map(u => u.id!==userId ? u : {
+      ...u,
+      expiresAt,
+      plan: {id: planId, events, used: u.plan?.used||0, activatedAt, expiresAt}
+    });
+    await save(updated); setEditPlan(null);
+  };
+
+  const setLifetime = async (id) => {
+    const updated = users.map(u => u.id!==id ? u : {
+      ...u, isAdmin: true, expiresAt: null,
+      plan: {id:"admin", events:9999, used: u.plan?.used||0, activatedAt: now(), expiresAt: null}
+    });
+    await save(updated);
+  };
+
+  const revoke = async (id) => {
+    const updated = users.map(u => u.id!==id ? u : {...u, expiresAt: addDays(now(),-1), plan: null});
+    await save(updated);
+  };
+
+  const deleteUser = async (id) => { await save(users.filter(u=>u.id!==id)); setConfirmDel(null); };
+
+  const expLabel = (u) => {
+    if (u.isAdmin && !u.expiresAt) return <span className="exp-admin">👑 Admin Vitalício</span>;
+    const d = daysLeft(u.expiresAt);
+    if (d<=0) return <span className="exp-expired">Expirado</span>;
+    if (d<=7) return <span className="exp-warn">⚠ {d}d</span>;
+    return <span className="exp-ok">✓ {d}d</span>;
+  };
+
+  if (loading) return <div style={{padding:40,textAlign:"center"}}><div className="spinner" style={{margin:"0 auto"}}/></div>;
+
+  return (
+    <div>
+      <div style={{background:"#FEF9EC",border:"1px solid rgba(201,168,106,.3)",borderRadius:"var(--rs)",padding:"14px 18px",marginBottom:24,fontSize:".85rem",color:"var(--gold-d)"}}>
+        💡 <strong>Integração de pagamento:</strong> Configure seus produtos no <strong>systeme.io</strong> para cada plano e compartilhe os links de checkout com seus clientes. Após confirmação do pagamento, ative o plano manualmente aqui. Em breve: ativação automática via webhook.
+      </div>
+
+      <div className="page-hdr" style={{marginBottom:20}}>
+        <div>
+          <div className="page-title" style={{fontSize:"1.5rem"}}>Gestão de Usuários</div>
+          <div className="page-sub">{users.length} conta{users.length!==1?"s":""} cadastrada{users.length!==1?"s":""}</div>
+        </div>
+      </div>
+
+      <div style={{overflowX:"auto"}}>
+        <table className="users-table">
+          <thead><tr>
+            <th>Usuário</th><th>E-mail</th><th>Cadastro</th>
+            <th>Plano</th><th>Uso</th><th>Validade</th><th>Status</th><th>Ações</th>
+          </tr></thead>
+          <tbody>
+            {users.map(u => {
+              const used = u.plan?.used||0, total = u.plan?.events||0;
+              return (
+                <tr key={u.id}>
+                  <td>
+                    <div style={{display:"flex",alignItems:"center",gap:9}}>
+                      <div className="user-av" style={{width:28,height:28,fontSize:".75rem"}}>{u.name[0].toUpperCase()}</div>
+                      <div>
+                        <div style={{fontWeight:600,fontSize:".85rem"}}>{u.name}</div>
+                        {u.isAdmin && <div style={{fontSize:".68rem",color:"var(--gold-d)"}}>Admin</div>}
+                      </div>
+                    </div>
+                  </td>
+                  <td style={{color:"var(--mid)",fontSize:".8rem"}}>{u.email}</td>
+                  <td style={{color:"var(--mid)",fontSize:".8rem"}}>{new Date(u.createdAt).toLocaleDateString("pt-BR")}</td>
+                  <td style={{fontSize:".8rem"}}>{u.plan ? (u.plan.id==="admin"?"Vitalício":PLANS.find(p=>p.id===u.plan.id)?.name||u.plan.id) : <span style={{color:"#DC2626"}}>Sem plano</span>}</td>
+                  <td>
+                    {u.plan && !u.isAdmin ? (
+                      <div style={{minWidth:90}}>
+                        <div style={{fontSize:".75rem",color:"var(--mid)",marginBottom:3}}>{used}/{total}</div>
+                        <div className="usage-bar-wrap" style={{width:80}}><div className={`usage-bar ${used>=total?"full":used/total>=.75?"warn":"ok"}`} style={{width:`${Math.min((used/total)*100,100)}%`}}/></div>
+                      </div>
+                    ) : <span style={{fontSize:".78rem",color:"var(--mid)"}}>—</span>}
+                  </td>
+                  <td style={{fontSize:".8rem"}}>{u.plan?.expiresAt ? new Date(u.plan.expiresAt).toLocaleDateString("pt-BR") : (u.isAdmin?"Vitalício":"—")}</td>
+                  <td>{expLabel(u)}</td>
+                  <td>
+                    {u.id===currentUser.id ? <span style={{fontSize:".73rem",color:"var(--mid)"}}>Sua conta</span> : (
+                      <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                        <button className="icon-btn sage btn-sm" onClick={()=>setEditPlan({userId:u.id, name:u.name})} title="Ativar plano">📋 Plano</button>
+                        <button className="icon-btn gold btn-sm" onClick={()=>setLifetime(u.id)} title="Tornar admin vitalício">👑</button>
+                        <button className="icon-btn btn-sm" style={{color:"#D97706"}} onClick={()=>revoke(u.id)} title="Revogar">🚫</button>
+                        <button className="icon-btn danger btn-sm" onClick={()=>setConfirmDel(u)} title="Excluir">🗑</button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {editPlan && (
+        <div className="overlay" onClick={()=>setEditPlan(null)}>
+          <div className="modal" onClick={e=>e.stopPropagation()}>
+            <div className="modal-title">Ativar Plano</div>
+            <div className="modal-sub">Ativando plano para <strong>{editPlan.name}</strong></div>
+            <div className="plan-grid" style={{gridTemplateColumns:"1fr 1fr"}}>
+              {PLANS.map(p => (
+                <div key={p.id} className={`plan-card${editPlan.planId===p.id?" selected":""}`} onClick={()=>setEditPlan(ep=>({...ep,planId:p.id}))}>
+                  {p.discount>0&&<div className="plan-discount">-{p.discount}%</div>}
+                  <div className="plan-name">{p.name}</div>
+                  <div className="plan-price">R$ {p.price.toFixed(2).replace(".",",")}</div>
+                  <div className="plan-events">{p.events} cronograma{p.events>1?"s":""} · {p.days}d</div>
+                </div>
+              ))}
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn-secondary" onClick={()=>setEditPlan(null)}>Cancelar</button>
+              <button className="btn btn-primary" disabled={!editPlan.planId} onClick={()=>activatePlan(editPlan.userId, editPlan.planId)}>✓ Ativar Plano</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmDel && (
+        <div className="overlay" onClick={()=>setConfirmDel(null)}>
+          <div className="modal" onClick={e=>e.stopPropagation()}>
+            <div className="modal-title">Excluir conta?</div>
+            <div className="modal-sub">Excluir a conta de <strong>{confirmDel.name}</strong>? Ação irreversível.</div>
+            <div className="modal-actions">
+              <button className="btn btn-secondary" onClick={()=>setConfirmDel(null)}>Cancelar</button>
+              <button className="btn btn-danger" onClick={()=>deleteUser(confirmDel.id)}>Excluir</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// WEDDING FORM
+// ─────────────────────────────────────────────
+const SECTIONS = ["Informações Básicas","Detalhes da Recepção","Família e Padrinhos","Sobre a Festa","Fornecedores","Alimentação","Horários","Bolo de Casamento","Buquê da Noiva","Brinde","Balada","Credenciamento","Crianças","Mesa Posta","Lembrancinhas","Momentos Especiais","Observações Gerais"];
+
+const emptyWedding = () => ({
+  id:uid(), createdAt:now(), updatedAt:now(), status:"draft",
+  brideName:"",groomName:"",ceremonyDate:"",ceremonyTime:"",guestCount:"",
+  receptionVenue:"",
+  coupleChildren:"",brideParents:"",brideSiblings:"",brideGrandparents:"",
+  groomParents:"",groomSiblings:"",groomGrandparents:"",
+  brideBridesmaids:"",groomGroomsmen:"",flowergirls:"",ringbearers:"",
+  partyFeatures:[],partyFeaturesOther:"",
+  suppliers:[],
+  foodOptions:[],foodOther:"",
+  appetizersTime:"",breakfastTime:"",lunchTime:"",afternoonTeaTime:"",dinnerTime:"",dessertTime:"",brothTime:"",
+  cakeOptions:[],cakeOther:"",
+  bouquetOptions:[],
+  toastParticipants:[],
+  danceOptions:[],
+  accreditationOptions:[],
+  childrenOptions:[],
+  tableOptions:[],
+  favorOptions:[],
+  specialBouquetToss:false,specialTieToss:false,specialDressChange:false,
+  generalNotes:"",
+});
+
+function MultiCheck({options,value,onChange}) {
+  const toggle=(opt)=>onChange(value.includes(opt)?value.filter(v=>v!==opt):[...value,opt]);
+  return (
+    <div className="chk-grid">
+      {options.map(opt=>(
+        <label key={opt} className={`chk-item${value.includes(opt)?" on":""}`}>
+          <input type="checkbox" checked={value.includes(opt)} onChange={()=>toggle(opt)}/>{opt}
+        </label>
+      ))}
+    </div>
+  );
+}
+
+// SupplierCard — estado local para evitar "pulo" ao digitar
+// propaga para o pai apenas no onBlur (saída do campo)
+function SupplierCard({ supplier, index, onUpdate, onDelete }) {
+  const [local, setLocal] = useState(supplier);
+  const cats=["DJ","Banda","Buffet","Decoração","Foto","Filmagem","Celebrante","Sonorização","Drinks","Segurança","Espaço","Doces","Bolo","Chopp","Lembrancinhas","Plataforma 360°","Cabine de fotos","Outros"];
+  const set = (k,v) => setLocal(l => ({...l,[k]:v}));
+  const flush = () => onUpdate(local);
+  // select propaga imediatamente (não causa pulo)
+  const setAndFlush = (k,v) => { const upd = {...local,[k]:v}; setLocal(upd); onUpdate(upd); };
+  return (
+    <div className="supp-card">
+      <div className="supp-hdr">
+        <div className="supp-label">Fornecedor {index+1}{local.category?` — ${local.category}`:""}</div>
+        <button className="btn btn-danger btn-sm" onClick={onDelete}>Remover</button>
+      </div>
+      <div className="g3">
+        <div className="field"><label>Categoria</label>
+          <select value={local.category} onChange={e=>setAndFlush("category",e.target.value)}>
+            <option value="">Selecione…</option>{cats.map(c=><option key={c}>{c}</option>)}
+          </select>
+        </div>
+        <div className="field"><label>Nome</label><input value={local.name} onChange={e=>set("name",e.target.value)} onBlur={flush}/></div>
+        <div className="field"><label>Empresa</label><input value={local.company} onChange={e=>set("company",e.target.value)} onBlur={flush}/></div>
+        <div className="field"><label>Responsável</label><input value={local.responsible} onChange={e=>set("responsible",e.target.value)} onBlur={flush}/></div>
+        <div className="field"><label>Telefone (WhatsApp)</label><input value={local.phone} onChange={e=>set("phone",e.target.value)} onBlur={flush} placeholder="66 9 9999-9999"/></div>
+        <div className="field"><label>E-mail</label><input type="email" value={local.email} onChange={e=>set("email",e.target.value)} onBlur={flush}/></div>
+        <div className="field"><label>Chegada prevista</label><input type="time" value={local.arrivalTime} onChange={e=>setAndFlush("arrivalTime",e.target.value)}/></div>
+        <div className="field"><label>Saída prevista</label><input type="time" value={local.departureTime} onChange={e=>setAndFlush("departureTime",e.target.value)}/></div>
+      </div>
+      <div className="field"><label>Observações</label><textarea value={local.notes} onChange={e=>set("notes",e.target.value)} onBlur={flush} rows={2}/></div>
+    </div>
+  );
+}
+
+function SupplierManager({suppliers,onChange}) {
+  const add=()=>onChange([...suppliers,{id:uid(),name:"",category:"",company:"",responsible:"",phone:"",email:"",arrivalTime:"",departureTime:"",notes:""}]);
+  const upd=(id,updated)=>onChange(suppliers.map(s=>s.id===id?updated:s));
+  const del=(id)=>onChange(suppliers.filter(s=>s.id!==id));
+  return (
+    <div>
+      {suppliers.map((s,i)=>(
+        <SupplierCard key={s.id} supplier={s} index={i}
+          onUpdate={updated=>upd(s.id,updated)}
+          onDelete={()=>del(s.id)}
+        />
+      ))}
+      <button className="btn btn-secondary" onClick={add}>＋ Adicionar Fornecedor</button>
+    </div>
+  );
+}
+
+function WeddingForm({wedding,userId,onSave,onCancel,showToast}) {
+  const [data,setData]=useState(()=>({...emptyWedding(),...wedding,userId}));
+  const [active,setActive]=useState(0);
+  const [saving,setSaving]=useState(false);
+  const secRefs=useRef([]);
+  const saveTimer=useRef(null);
+  const upd=(k,v)=>setData(d=>({...d,[k]:v,updatedAt:now()}));
+
+  useEffect(()=>{
+    clearTimeout(saveTimer.current); setSaving(true);
+    saveTimer.current=setTimeout(async()=>{
+      await store.set(`fc-wedding-${userId}-${data.id}`,data); setSaving(false);
+    },1200);
+    return()=>clearTimeout(saveTimer.current);
+  },[data]);
+
+  const scrollTo=(i)=>{ setActive(i); secRefs.current[i]?.scrollIntoView({behavior:"smooth"}); };
+
+  const handleSave=async()=>{
+    const updated={...data,status:"done",updatedAt:now()};
+    await store.set(`fc-wedding-${userId}-${data.id}`,updated);
+    onSave(updated); showToast("Casamento salvo com sucesso!","success");
+  };
+
+  const partyOpts=["Entrada especial do casal","Brinde ao casal","Valsa do casal no início da festa","Valsa para abrir a balada","Coreografia no início da festa","Coreografia para abrir a balada","Skypaper","Papel picado","Bolhas de sabão","Velas Sparkle","Acessórios de pista","Bolo servido na mesa","Lembrancinhas","Slide de fotos","Vídeo Love Story","Vídeo para redes sociais","Vídeo de felicitações dos convidados","Brincadeira da gravata","Brincadeira do buquê","Outras brincadeiras","Senha e QR Code da internet","Reserva de mesas","Outro"];
+
+  const Sec=({i,icon,children})=>(
+    <div className="fsec" ref={el=>secRefs.current[i]=el}>
+      <div className="fsec-title">{icon} {SECTIONS[i]}</div>
+      <div className="fsec-bar"/>
+      {children}
+    </div>
+  );
+
+  return (
+    <div>
+      <div className="hdr">
+        <Logo/>
+        <div className="hdr-right">
+          <div className="autosave"><div className={`as-dot${saving?" saving":""}`}/>{saving?"Salvando…":"Salvo"}</div>
+          <button className="btn btn-ghost" onClick={onCancel}>← Voltar</button>
+          <button className="btn btn-primary" onClick={handleSave}>Salvar Casamento</button>
+        </div>
+      </div>
+      <div className="form-layout">
+        <div className="form-sidebar">
+          <div className="fsb-title">Seções do Formulário</div>
+          {SECTIONS.map((s,i)=>(
+            <div key={i} className={`fsb-item${active===i?" active":""}`} onClick={()=>scrollTo(i)}>
+              <span className="fsb-num">{i+1}</span>{s}
+            </div>
+          ))}
+          <hr className="div"/>
+          <button className="btn btn-primary btn-full" onClick={handleSave}>Salvar</button>
+        </div>
+        <div className="form-main">
+          <Sec i={0} icon="💍">
+            <div className="g2">
+              <div className="field"><label>Nome da Noiva</label><input value={data.brideName} onChange={e=>upd("brideName",e.target.value)} placeholder="Nome completo da noiva"/></div>
+              <div className="field"><label>Nome do Noivo</label><input value={data.groomName} onChange={e=>upd("groomName",e.target.value)} placeholder="Nome completo do noivo"/></div>
+              <div className="field"><label>Data da Cerimônia</label><input type="date" value={data.ceremonyDate} onChange={e=>upd("ceremonyDate",e.target.value)}/></div>
+              <div className="field"><label>Horário da Cerimônia</label><input type="time" value={data.ceremonyTime} onChange={e=>upd("ceremonyTime",e.target.value)}/></div>
+            </div>
+            <div className="field" style={{maxWidth:200}}><label>Número de Convidados</label><input type="number" value={data.guestCount} onChange={e=>upd("guestCount",e.target.value)} placeholder="0"/></div>
+          </Sec>
+          <Sec i={1} icon="🏛">
+            <div className="field"><label>Local da Recepção</label><input value={data.receptionVenue} onChange={e=>upd("receptionVenue",e.target.value)} placeholder="Nome e endereço do local"/></div>
+          </Sec>
+          <Sec i={2} icon="👨‍👩‍👧">
+            <div className="g2">
+              {[["coupleChildren","Filhos do casal"],["brideParents","Pais da noiva"],["brideSiblings","Irmãos da noiva"],["brideGrandparents","Avós da noiva"],["groomParents","Pais do noivo"],["groomSiblings","Irmãos do noivo"],["groomGrandparents","Avós do noivo"],["brideBridesmaids","Padrinhos da noiva"],["groomGroomsmen","Padrinhos do noivo"],["flowergirls","Daminhas"],["ringbearers","Pajens"]].map(([k,l])=>(
+                <div key={k} className="field"><label>{l}</label><textarea value={data[k]} onChange={e=>upd(k,e.target.value)} rows={2} placeholder="Nomes separados por vírgula"/></div>
+              ))}
+            </div>
+          </Sec>
+          <Sec i={3} icon="🎉">
+            <MultiCheck options={partyOpts} value={data.partyFeatures} onChange={v=>upd("partyFeatures",v)}/>
+            {data.partyFeatures.includes("Outro")&&<div className="field" style={{marginTop:12}}><label>Descreva o "Outro"</label><textarea value={data.partyFeaturesOther} onChange={e=>upd("partyFeaturesOther",e.target.value)} rows={2}/></div>}
+          </Sec>
+          <Sec i={4} icon="🤝">
+            <SupplierManager suppliers={data.suppliers} onChange={v=>upd("suppliers",v)}/>
+          </Sec>
+          <Sec i={5} icon="🍽">
+            <MultiCheck options={["Entrada","Café da manhã","Almoço","Café da tarde","Jantar","Sobremesa","Caldo","Outro"]} value={data.foodOptions} onChange={v=>upd("foodOptions",v)}/>
+            {data.foodOptions.includes("Outro")&&<div className="field" style={{marginTop:12}}><label>Especifique</label><input value={data.foodOther} onChange={e=>upd("foodOther",e.target.value)}/></div>}
+          </Sec>
+          <Sec i={6} icon="⏰">
+            <div className="g3">
+              {[["appetizersTime","Entradinhas"],["breakfastTime","Café da manhã"],["lunchTime","Almoço"],["afternoonTeaTime","Café da tarde"],["dinnerTime","Jantar"],["dessertTime","Sobremesa"],["brothTime","Caldo"]].map(([k,l])=>(
+                <div key={k} className="field"><label>{l}</label><input type="time" value={data[k]} onChange={e=>upd(k,e.target.value)}/></div>
+              ))}
+            </div>
+          </Sec>
+          <Sec i={7} icon="🎂">
+            <MultiCheck options={["Será servido na mesa","Será lembrancinha","Bolo verdadeiro","Bolo cenográfico","Não terá bolo","Outro"]} value={data.cakeOptions} onChange={v=>upd("cakeOptions",v)}/>
+            {data.cakeOptions.includes("Outro")&&<div className="field" style={{marginTop:12}}><label>Especifique</label><input value={data.cakeOther} onChange={e=>upd("cakeOther",e.target.value)}/></div>}
+          </Sec>
+          <Sec i={8} icon="💐">
+            <MultiCheck options={["Apenas um buquê","Cerimonialista levará ao salão","Decoradora entregará","Outra pessoa levará","Jogarei o mesmo buquê","Jogarei outro buquê","Darei de presente","Não jogarei buquê"]} value={data.bouquetOptions} onChange={v=>upd("bouquetOptions",v)}/>
+          </Sec>
+          <Sec i={9} icon="🥂">
+            <MultiCheck options={["Casal","Pais","Padrinhos","Filhos","Avós","Irmãos","Cunhados"]} value={data.toastParticipants} onChange={v=>upd("toastParticipants",v)}/>
+          </Sec>
+          <Sec i={10} icon="💃">
+            <MultiCheck options={["Terá balada","Não terá balada","Coreografia do casal","Coreografia coletiva","Sem abertura oficial"]} value={data.danceOptions} onChange={v=>upd("danceOptions",v)}/>
+          </Sec>
+          <Sec i={11} icon="🎫">
+            <MultiCheck options={["Lista","Convite","Número exato","Lista + Convite","QR Code"]} value={data.accreditationOptions} onChange={v=>upd("accreditationOptions",v)}/>
+          </Sec>
+          <Sec i={12} icon="👶">
+            <MultiCheck options={["Terá monitores","Não terá monitores","Espaço kids","Não terá espaço kids","Não haverá crianças"]} value={data.childrenOptions} onChange={v=>upd("childrenOptions",v)}/>
+          </Sec>
+          <Sec i={13} icon="🍽">
+            <MultiCheck options={["Menores de 3 anos no colo","Serviço para convidados acima de 3 anos","Mesa para 6 lugares","Mesa para 8 lugares","Mesa para 10 lugares","Mesa para 20 lugares"]} value={data.tableOptions} onChange={v=>upd("tableOptions",v)}/>
+          </Sec>
+          <Sec i={14} icon="🎁">
+            <MultiCheck options={["Uma por pessoa","Uma por família","Apenas adultos","Lembrancinhas diferentes para crianças","Distribuição após refeição","Distribuição durante a balada"]} value={data.favorOptions} onChange={v=>upd("favorOptions",v)}/>
+          </Sec>
+          <Sec i={15} icon="✨">
+            <div className="chk-grid">
+              {[["specialBouquetToss","Brincadeira do buquê"],["specialTieToss","Brincadeira da gravata"],["specialDressChange","Troca de vestido da noiva"]].map(([k,l])=>(
+                <label key={k} className={`chk-item${data[k]?" on":""}`}>
+                  <input type="checkbox" checked={data[k]} onChange={e=>upd(k,e.target.checked)}/>{l}
+                </label>
+              ))}
+            </div>
+          </Sec>
+          <Sec i={16} icon="📝">
+            <div className="field"><label>Observações</label><textarea value={data.generalNotes} onChange={e=>upd("generalNotes",e.target.value)} rows={8} style={{minHeight:160}} placeholder="Detalhes adicionais, pedidos especiais…"/></div>
+          </Sec>
+          <div style={{display:"flex",gap:12,justifyContent:"flex-end",paddingBottom:40}}>
+            <button className="btn btn-secondary" onClick={onCancel}>Cancelar</button>
+            <button className="btn btn-primary" onClick={handleSave}>Salvar Casamento</button>
+          </div>
+        </div>
+      </div>
+      <div className="footer">Desenvolvido por Silvana Santana – Cerimonial Sorriso</div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// WHATSAPP SENDER
+// ─────────────────────────────────────────────
+function WhatsAppSender({ wedding, scheduleItems, onClose }) {
+  const [sel, setSel] = useState({});
+  const [preview, setPreview] = useState(null); // {supplier, msg}
+
+  const suppliers = wedding.suppliers || [];
+
+  const toggleSel = (id) => setSel(s => ({...s, [id]: !s[id]}));
+  const selectedList = suppliers.filter(s => sel[s.id]);
+
+  const nextDay = (dateStr) => {
+    if (!dateStr) return "dia seguinte";
+    const d = new Date(dateStr + "T12:00:00");
+    d.setDate(d.getDate() + 1);
+    return d.toLocaleDateString("pt-BR", {weekday:"long", day:"2-digit", month:"2-digit"});
+  };
+
+  const buildMessage = (supplier) => {
+    const relevant = filterItemsForCategory(scheduleItems, supplier.category);
+    const schedText = relevant.length > 0
+      ? relevant.map(i => `${i.time} – ${i.activity}${i.observations ? ` (${i.observations})` : ""}`).join("\n")
+      : "Consultar cronograma completo com a cerimonialista.";
+
+    const dateStr = fmtDate(wedding.ceremonyDate);
+    const venue = wedding.receptionVenue || "local do evento";
+    const noiva = wedding.brideName || "Noiva";
+    const noivo = wedding.groomName || "Noivo";
+
+    return `Bom dia! Tudo bem? 😊
+
+Meu nome é *Silvana*, sou a cerimonialista responsável pelo casamento de *${noiva}* e *${noivo}*, que acontecerá no dia *${dateStr}*, com recepção no *${venue}*.
+
+📍 *Horário de chegada/montagem:* ➡️ A partir das *${supplier.arrivalTime || "– a confirmar"}* do dia ${dateStr}
+📍 *Horário de saída/desmontagem:* ➡️ Até *${supplier.departureTime || "– a confirmar"}* de ${nextDay(wedding.ceremonyDate)}
+
+*Seus horários no cronograma:*
+${schedText}
+
+Peço, por gentileza, atenção rigorosa aos horários para evitar multa ao casal.
+
+Fico à disposição para qualquer dúvida. Obrigada! 🌸
+*— Silvana Santana · Cerimonialista*`;
+  };
+
+  const openWa = (supplier) => {
+    const msg = buildMessage(supplier);
+    const phone = (supplier.phone || "").replace(/\D/g, "");
+    const url = phone
+      ? `https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`
+      : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    window.open(url, "_blank");
+  };
+
+  const openWaAll = () => {
+    selectedList.forEach((s, i) => {
+      setTimeout(() => openWa(s), i * 600);
+    });
+  };
+
+  return (
+    <div className="overlay" onClick={onClose}>
+      <div className="modal modal-lg" onClick={e => e.stopPropagation()}>
+        <div className="modal-title">📲 Enviar via WhatsApp</div>
+        <div className="modal-sub">Selecione os fornecedores. Cada um recebe apenas os horários relevantes para sua categoria.</div>
+
+        {suppliers.length === 0 ? (
+          <div style={{textAlign:"center",padding:"32px",color:"var(--mid)"}}>
+            Nenhum fornecedor cadastrado neste casamento.<br/>
+            <span style={{fontSize:".82rem"}}>Adicione fornecedores no formulário para usar este recurso.</span>
+          </div>
+        ) : (
+          <>
+            <div className="wa-supp-grid">
+              {suppliers.map(s => {
+                const relevant = filterItemsForCategory(scheduleItems, s.category);
+                return (
+                  <div key={s.id} className={`wa-supp-item${sel[s.id]?" sel":""}`} onClick={()=>toggleSel(s.id)}>
+                    <input type="checkbox" checked={!!sel[s.id]} onChange={()=>toggleSel(s.id)} onClick={e=>e.stopPropagation()}/>
+                    <div>
+                      <div style={{fontWeight:600,fontSize:".85rem"}}>{s.name||s.company||s.category}</div>
+                      <div style={{fontSize:".73rem",color:"var(--mid)"}}>{s.category}{s.phone?` · ${s.phone}`:""}</div>
+                      <div style={{fontSize:".7rem",color:"var(--sage-d)"}}>{relevant.length} item{relevant.length!==1?"s":""} no cronograma</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {selectedList.length > 0 && (
+              <div style={{marginBottom:16}}>
+                <div style={{fontSize:".78rem",fontWeight:600,color:"var(--mid)",marginBottom:8,textTransform:"uppercase",letterSpacing:".07em"}}>
+                  Prévia da mensagem — {selectedList[0].name||selectedList[0].category}
+                </div>
+                <div className="wa-preview">{buildMessage(selectedList[0])}</div>
+                {selectedList.length > 1 && (
+                  <div style={{fontSize:".75rem",color:"var(--mid)",marginTop:6}}>
+                    + {selectedList.length-1} outro{selectedList.length-1>1?"s":""} fornecedor{selectedList.length-1>1?"es":""} com mensagens individualizadas
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="modal-actions">
+              <button className="btn btn-secondary" onClick={onClose}>Fechar</button>
+              {selectedList.length > 0 && (
+                <button className="btn btn-green" onClick={openWaAll}>
+                  📲 Enviar para {selectedList.length} fornecedor{selectedList.length>1?"es":""}
+                </button>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// SCHEDULE EDITOR
+// ─────────────────────────────────────────────
+function buildPrompt(w) {
+  const yn=v=>v?"Sim":"Não", arr=a=>Array.isArray(a)&&a.length?a.join(", "):"Não informado";
+  return `Você é um coordenador profissional de casamentos brasileiro especialista em cronogramas operacionais.
+Gere um cronograma operacional COMPLETO e DETALHADO para o casamento abaixo.
+
+DADOS:
+- Noivos: ${w.brideName||"Noiva"} e ${w.groomName||"Noivo"}
+- Data: ${fmtDate(w.ceremonyDate)} | Cerimônia: ${w.ceremonyTime||"18:00"}
+- Convidados: ${w.guestCount||"100"} | Local: ${w.receptionVenue||"A informar"}
+ALIMENTAÇÃO: ${arr(w.foodOptions)}
+Horário Jantar: ${w.dinnerTime||"—"} | Entradinhas: ${w.appetizersTime||"—"} | Caldo: ${w.brothTime||"—"}
+ATRAÇÕES: ${arr(w.partyFeatures)}
+BOLO: ${arr(w.cakeOptions)} | BUQUÊ: ${arr(w.bouquetOptions)}
+BRINDE com: ${arr(w.toastParticipants)} | BALADA: ${arr(w.danceOptions)}
+MOMENTOS: Buquê:${yn(w.specialBouquetToss)} Gravata:${yn(w.specialTieToss)} Troca vestido:${yn(w.specialDressChange)}
+FORNECEDORES: ${w.suppliers?.length?w.suppliers.map(s=>`${s.category}:${s.name||s.company}(${s.arrivalTime||"?"}→${s.departureTime||"?"})`).join(", "):"N/A"}
+OBS: ${w.generalNotes||"Nenhuma"}
+
+RETORNE APENAS um array JSON válido, sem markdown. Cada item: {"time":"HH:MM","activity":"...","responsible":"...","observations":"..."}
+Mínimo 22 itens. Inicie com chegada dos fornecedores. Encerre com desmontagem. Todos os textos em Português Brasileiro.`;
+}
+
+function ScheduleEditor({ wedding, userId, onBack, showToast }) {
+  const [items, setItems] = useState([]);
+  const [generating, setGenerating] = useState(false);
+  const [generated, setGenerated] = useState(false);
+  const [dragIdx, setDragIdx] = useState(null);
+  const [dragOver, setDragOver] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [newRow, setNewRow] = useState({time:"",activity:"",responsible:"",observations:""});
+  const [showWa, setShowWa] = useState(false);
+  const [showDocxModal, setShowDocxModal] = useState(false);
+  const [printPreview, setPrintPreview] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState(null);
+  const saveTimer = useRef(null);
+  const schedKey = `fc-schedule-${userId}-${wedding.id}`;
+
+  useEffect(() => {
+    store.get(schedKey).then(saved => { if (saved?.length) { setItems(saved); setGenerated(true); } });
+  }, []);
+
+  useEffect(() => {
+    if (!generated) return;
+    clearTimeout(saveTimer.current); setSaving(true);
+    saveTimer.current = setTimeout(async () => { await store.set(schedKey, items); setSaving(false); }, 1000);
+  }, [items, generated]);
+
+  const generate = async () => {
+    setGenerating(true);
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          model:"claude-sonnet-4-20250514", max_tokens:4000,
+          system:"Especialista em coordenação de casamentos. Retorne apenas JSON válido, sem markdown.",
+          messages:[{role:"user",content:buildPrompt(wedding)}]
+        })
+      });
+      const data = await res.json();
+      const text = data.content?.map(c=>c.text||"").join("")||"[]";
+      const parsed = JSON.parse(text.replace(/```json|```/g,"").trim());
+      const withIds = parsed.map(i=>({...i,id:uid()}));
+      setItems(withIds); setGenerated(true);
+      await store.set(schedKey, withIds);
+
+      // Increment usage counter
+      const users = await store.get("fc-users")||[];
+      const updated = users.map(u => {
+        if (u.id!==userId || !u.plan) return u;
+        return {...u, plan:{...u.plan, used:(u.plan.used||0)+1}};
+      });
+      await store.set("fc-users", updated);
+
+      showToast("Cronograma gerado com sucesso!","success");
+    } catch(e) {
+      console.error(e);
+      showToast("Erro ao gerar. Tente novamente.","error");
+    }
+    setGenerating(false);
+  };
+
+  const updItem=(id,k,v)=>setItems(its=>its.map(i=>i.id===id?{...i,[k]:v}:i));
+  const delItem=(id)=>setItems(its=>its.filter(i=>i.id!==id));
+
+  const addRow=()=>{
+    if (!newRow.time||!newRow.activity) return;
+    const merged=[...items,{...newRow,id:uid()}].sort((a,b)=>{
+      if(!a.time) return 1; if(!b.time) return -1; return a.time.localeCompare(b.time);
+    });
+    setItems(merged); setNewRow({time:"",activity:"",responsible:"",observations:""});
+  };
+
+  const onDragStart=(e,i)=>{setDragIdx(i);e.dataTransfer.effectAllowed="move";};
+  const onDragOver=(e,i)=>{e.preventDefault();setDragOver(i);};
+  const onDrop=(e,i)=>{
+    e.preventDefault();
+    if(dragIdx===null||dragIdx===i){setDragIdx(null);setDragOver(null);return;}
+    const its=[...items];const[moved]=its.splice(dragIdx,1);its.splice(i,0,moved);
+    setItems(its);setDragIdx(null);setDragOver(null);
+  };
+
+  // ── Builds the styled HTML table used by both exports ──
+  const buildExportRows = (stripHtml = false) =>
+    items.map((it, idx) => {
+      const bg = idx % 2 === 0 ? "#ffffff" : "#f7f5f2";
+      return `<tr style="background:${bg}">
+        <td style="padding:9px 13px;border:1px solid #d4cfc8;font-weight:bold;white-space:nowrap;color:#2A2A28;vertical-align:top">${it.time}</td>
+        <td style="padding:9px 13px;border:1px solid #d4cfc8;vertical-align:top">${it.activity}</td>
+        <td style="padding:9px 13px;border:1px solid #d4cfc8;vertical-align:top;color:#555">${it.responsible || ""}</td>
+        <td style="padding:9px 13px;border:1px solid #d4cfc8;vertical-align:top;color:#666;font-style:italic">${it.observations || ""}</td>
+      </tr>`;
+    }).join("");
+
+  const buildExportHeader = () => `
+    <div style="text-align:center;margin-bottom:22px;padding-bottom:16px;border-bottom:3px solid #AAB8A1">
+      <img src="${LOGO_SRC}" alt="Logo" style="height:60px;width:auto;margin-bottom:10px;display:block;margin-left:auto;margin-right:auto"/>
+      <h1 style="margin:0 0 4px;font-size:22pt;color:#A8874E;font-family:Georgia,serif;letter-spacing:1px">FESTA DE CASAMENTO</h1>
+      <p style="margin:0 0 14px;color:#7A8F73;font-style:italic;font-size:11pt">Silvana Santana – Cerimonial Sorriso</p>
+      <table style="margin:0 auto;font-size:10pt;color:#555;border-collapse:separate;border-spacing:0 2px">
+        <tr>
+          <td style="padding:2px 14px;border-right:1px solid #ccc"><strong>💑 ${wedding.brideName} e ${wedding.groomName}</strong></td>
+          <td style="padding:2px 14px;border-right:1px solid #ccc">📅 ${fmtDate(wedding.ceremonyDate)}</td>
+          ${wedding.receptionVenue ? `<td style="padding:2px 14px;border-right:1px solid #ccc">📍 ${wedding.receptionVenue}</td>` : ""}
+          ${wedding.guestCount ? `<td style="padding:2px 14px">👥 ${wedding.guestCount} convidados</td>` : ""}
+        </tr>
+      </table>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:10.5pt;font-family:Arial,sans-serif">
+      <thead>
+        <tr style="background:#AAB8A1;color:white">
+          <th style="padding:10px 13px;border:1px solid #8fa88a;text-align:left;font-weight:bold;width:80px">Horário</th>
+          <th style="padding:10px 13px;border:1px solid #8fa88a;text-align:left;font-weight:bold">Atividade</th>
+          <th style="padding:10px 13px;border:1px solid #8fa88a;text-align:left;font-weight:bold;width:150px">Responsável</th>
+          <th style="padding:10px 13px;border:1px solid #8fa88a;text-align:left;font-weight:bold;width:200px">Observações</th>
+        </tr>
+      </thead>
+      <tbody>${buildExportRows()}</tbody>
+    </table>
+    <p style="text-align:center;margin-top:20px;font-size:8.5pt;color:#aaa;font-style:italic">
+      Desenvolvido por Silvana Santana – Cerimonial Sorriso
+    </p>`;
+
+  // ── DOCX: copia HTML rico via execCommand — Word interpreta e preserva a formatação ──
+  const exportDocx = () => {
+    const temp = document.createElement("div");
+    temp.style.cssText = "position:fixed;top:0;left:-9999px;width:900px;background:white;font-family:Arial,sans-serif;font-size:11pt;z-index:-1;";
+    temp.innerHTML = buildExportHeader();
+    document.body.appendChild(temp);
+
+    // Seleciona o conteúdo renderizado (não HTML puro — copia como rich text)
+    const range = document.createRange();
+    range.selectNodeContents(temp);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+
+    const ok = document.execCommand("copy");
+    sel.removeAllRanges();
+    document.body.removeChild(temp);
+
+    if (ok) {
+      showToast("✓ Copiado com formatação! Abra o Word e pressione Ctrl+V", "success");
+    } else {
+      setShowDocxModal(true);
+    }
+  };
+
+  // ── PDF: carrega jsPDF do CDN e gera PDF real como data URL ──
+  const exportPDF = async () => {
+    setPrintPreview(true); // mostra preview imediatamente
+    try {
+      // Carrega jsPDF dinamicamente se não estiver disponível
+      if (!window.jspdf) {
+        await new Promise((res,rej)=>{
+          const s=document.createElement("script");
+          s.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+          s.onload=res; s.onerror=rej; document.head.appendChild(s);
+        });
+      }
+      if (!window.jspdf?.jsPDF?.prototype?.autoTable) {
+        await new Promise((res,rej)=>{
+          const s=document.createElement("script");
+          s.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js";
+          s.onload=res; s.onerror=rej; document.head.appendChild(s);
+        });
+      }
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation:"portrait", unit:"mm", format:"a4" });
+      const pw = doc.internal.pageSize.getWidth();
+
+      // Logo (embedded base64)
+      try { doc.addImage(LOGO_SRC,"PNG",14,8,38,18); } catch(e){}
+
+      // Título
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(18);
+      doc.setTextColor(168,135,78);
+      doc.text("FESTA DE CASAMENTO", pw/2, 16, {align:"center"});
+
+      doc.setFont("helvetica","italic");
+      doc.setFontSize(10);
+      doc.setTextColor(122,143,115);
+      doc.text("Silvana Santana – Cerimonial Sorriso", pw/2, 22, {align:"center"});
+
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(9);
+      doc.setTextColor(100,100,100);
+      doc.text(`${wedding.brideName} e ${wedding.groomName}  ·  ${fmtDate(wedding.ceremonyDate)}  ·  ${wedding.receptionVenue||""}  ·  ${wedding.guestCount||"—"} convidados`, pw/2, 28, {align:"center"});
+
+      // Linha separadora
+      doc.setDrawColor(170,184,161);
+      doc.setLineWidth(0.5);
+      doc.line(14, 31, pw-14, 31);
+
+      // Tabela
+      doc.autoTable({
+        startY: 35,
+        head:[["Horário","Atividade","Responsável","Observações"]],
+        body: items.map(it=>[it.time, it.activity, it.responsible||"", it.observations||""]),
+        headStyles:{ fillColor:[170,184,161], textColor:255, fontStyle:"bold", fontSize:9 },
+        bodyStyles:{ fontSize:8.5, cellPadding:2.5, valign:"top" },
+        alternateRowStyles:{ fillColor:[250,248,244] },
+        columnStyles:{
+          0:{cellWidth:18, fontStyle:"bold"},
+          1:{cellWidth:75},
+          2:{cellWidth:42},
+          3:{cellWidth:42},
+        },
+        didDrawPage:(data)=>{
+          // Rodapé em cada página
+          const pg = doc.internal.getCurrentPageInfo().pageNumber;
+          const total = doc.internal.getNumberOfPages();
+          doc.setFontSize(7); doc.setTextColor(180,180,180);
+          doc.text("Desenvolvido por Silvana Santana – Cerimonial Sorriso",pw/2,doc.internal.pageSize.getHeight()-6,{align:"center"});
+          doc.text(`${pg}/${total}`,pw-14,doc.internal.pageSize.getHeight()-6,{align:"right"});
+        }
+      });
+
+      const pdfUrl = doc.output("datauristring");
+      setPdfUrl(pdfUrl);
+    } catch(e) {
+      console.error("jsPDF error:",e);
+      showToast("Use Ctrl+P para imprimir a pré-visualização","info");
+    }
+  };
+
+  if (generating) return (
+    <div className="app">
+      <div className="hdr"><Logo/></div>
+      <div className="gen-box">
+        <div className="gen-rings"><div className="gen-ring"/><div className="gen-ring"/><div className="gen-ring"/></div>
+        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.4rem",marginBottom:8}}>Gerando Cronograma com IA…</div>
+        <div style={{color:"var(--mid)",fontSize:".88rem"}}>Analisando todos os detalhes de <strong>{wedding.brideName} e {wedding.groomName}</strong></div>
+      </div>
+      <div className="footer">Desenvolvido por Silvana Santana – Cerimonial Sorriso</div>
+    </div>
+  );
+
+  return (
+    <div className="app">
+      <div className="hdr">
+        <Logo/>
+        <div className="hdr-right">
+          {generated&&<div className="autosave"><div className={`as-dot${saving?" saving":""}`}/>{saving?"Salvando…":"Salvo"}</div>}
+          <button className="btn btn-ghost" onClick={onBack}>← Voltar</button>
+          {generated&&<>
+            <button className="btn btn-secondary btn-sm" onClick={()=>setShowWa(true)}>📲 WhatsApp</button>
+            <button className="btn btn-secondary btn-sm" onClick={exportDocx} title="Copia tabela formatada — cole no Word com Ctrl+V">📋 Copiar p/ Word</button>
+            <button className="btn btn-secondary btn-sm" onClick={exportPDF} title="Abre diálogo de impressão — salve como PDF">🖨 Imprimir / PDF</button>
+          </>}
+        </div>
+      </div>
+
+      <div className="sched-page">
+        <div className="sched-hdr">
+          <div>
+            <div className="page-title" style={{fontFamily:"'Cormorant Garamond',serif"}}>Cronograma Operacional</div>
+            <div className="page-sub">{wedding.brideName} e {wedding.groomName} · {fmtDate(wedding.ceremonyDate)}</div>
+          </div>
+          {!generated
+            ? <button className="btn btn-primary" onClick={generate}>✨ Gerar com IA</button>
+            : <button className="btn btn-secondary" onClick={generate}>🔄 Regenerar</button>
+          }
+        </div>
+
+        {!generated ? (
+          <div style={{textAlign:"center",padding:"60px 20px",background:"#fff",borderRadius:"var(--r)",boxShadow:"var(--sh)"}}>
+            <div style={{fontSize:"3.5rem",marginBottom:16}}>📋</div>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.6rem",marginBottom:8}}>Nenhum cronograma gerado</div>
+            <div style={{color:"var(--mid)",marginBottom:24}}>Clique em "Gerar com IA" para criar automaticamente</div>
+            <button className="btn btn-primary" onClick={generate}>✨ Gerar Cronograma com IA</button>
+          </div>
+        ) : (
+          <div className="sched-doc">
+            <div className="doc-hdr">
+              <div className="doc-title">FESTA DE CASAMENTO</div>
+              <div className="doc-company">Silvana Santana – Cerimonial Sorriso</div>
+              <div className="doc-info">
+                <div className="doc-info-item">💑 {wedding.brideName} e {wedding.groomName}</div>
+                <div className="doc-info-item">📅 {fmtDate(wedding.ceremonyDate)}</div>
+                {wedding.receptionVenue&&<div className="doc-info-item">📍 {wedding.receptionVenue}</div>}
+                {wedding.guestCount&&<div className="doc-info-item">👥 {wedding.guestCount} convidados</div>}
+              </div>
+            </div>
+            <table className="sched-table">
+              <thead><tr><th>Horário</th><th>Atividade</th><th>Responsável</th><th>Observações</th><th></th></tr></thead>
+              <tbody>
+                {items.map((item,i)=>(
+                  <tr key={item.id} className={`sched-row${dragIdx===i?" dragging":""}${dragOver===i?" drag-over":""}`}
+                    draggable onDragStart={e=>onDragStart(e,i)} onDragOver={e=>onDragOver(e,i)} onDrop={e=>onDrop(e,i)} onDragEnd={()=>{setDragIdx(null);setDragOver(null);}}>
+                    <td><input className="cell-in" value={item.time} onChange={e=>updItem(item.id,"time",e.target.value)} style={{width:70,fontWeight:700}}/></td>
+                    <td><textarea className="cell-in" value={item.activity} onChange={e=>updItem(item.id,"activity",e.target.value)} rows={2} style={{minHeight:40}}/></td>
+                    <td><input className="cell-in" value={item.responsible} onChange={e=>updItem(item.id,"responsible",e.target.value)}/></td>
+                    <td><textarea className="cell-in" value={item.observations} onChange={e=>updItem(item.id,"observations",e.target.value)} rows={2} style={{minHeight:40}}/></td>
+                    <td><button className="icon-btn danger" style={{padding:"4px 8px",fontSize:".75rem"}} onClick={()=>delItem(item.id)}>✕</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="add-row-bar">
+              <div className="field" style={{maxWidth:90}}><label>Horário</label><input type="time" value={newRow.time} onChange={e=>setNewRow(r=>({...r,time:e.target.value}))}/></div>
+              <div className="field" style={{flex:2}}><label>Atividade</label><input value={newRow.activity} onChange={e=>setNewRow(r=>({...r,activity:e.target.value}))} placeholder="Nova atividade…"/></div>
+              <div className="field" style={{flex:1}}><label>Responsável</label><input value={newRow.responsible} onChange={e=>setNewRow(r=>({...r,responsible:e.target.value}))}/></div>
+              <div className="field" style={{flex:1}}><label>Observações</label><input value={newRow.observations} onChange={e=>setNewRow(r=>({...r,observations:e.target.value}))}/></div>
+              <div style={{paddingBottom:18}}><button className="btn btn-sage" onClick={addRow}>＋ Adicionar</button></div>
+            </div>
+            <div style={{marginTop:10,fontSize:".73rem",color:"var(--mid)",textAlign:"center"}}>
+              💡 Clique em qualquer campo para editar · Arraste para reordenar · Novos itens entram na ordem cronológica · Salvo automaticamente
+            </div>
+          </div>
+        )}
+      </div>
+
+      {showDocxModal && (
+        <div className="overlay" onClick={()=>setShowDocxModal(false)}>
+          <div className="modal" onClick={e=>e.stopPropagation()}>
+            <div className="modal-title">📋 Copiar para o Word</div>
+            <div className="modal-sub">Clique na área abaixo → Ctrl+A → Ctrl+C → abra o Word → Ctrl+V. A tabela ficará formatada.</div>
+            <textarea
+              readOnly
+              onFocus={e => e.target.select()}
+              style={{width:"100%",height:260,fontSize:".78rem",fontFamily:"monospace",padding:10,border:"1px solid var(--gray)",borderRadius:"var(--rs)",resize:"vertical"}}
+              value={"Horário\tAtividade\tResponsável\tObservações\n" + items.map(it=>`${it.time}\t${it.activity}\t${it.responsible||""}\t${it.observations||""}`).join("\n")}
+            />
+            <div className="modal-actions">
+              <button className="btn btn-secondary" onClick={()=>setShowDocxModal(false)}>Fechar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showWa && <WhatsAppSender wedding={wedding} scheduleItems={items} onClose={()=>setShowWa(false)}/>}
+
+      {/* ── PRINT PREVIEW — tela cheia, CSS @media print oculta tudo exceto isto ── */}
+      {printPreview && (
+        <div id="fc-print-preview" style={{position:"fixed",inset:0,background:"#f0ede8",zIndex:9999,overflowY:"auto"}}>
+          {/* Barra de ação — oculta na impressão via CSS */}
+          <div id="fc-preview-bar" style={{background:"#2A2A28",color:"white",padding:"12px 32px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:1}}>
+            <div style={{display:"flex",alignItems:"center",gap:12}}>
+              <span style={{fontSize:".85rem",color:"rgba(255,255,255,.6)"}}>Pré-visualização — </span>
+              <span style={{fontSize:".9rem",fontWeight:500}}>{wedding.brideName} e {wedding.groomName}</span>
+            </div>
+            <div style={{display:"flex",gap:10,alignItems:"center"}}>
+              <span style={{fontSize:".75rem",color:"rgba(255,255,255,.5)"}}>Ctrl+P também funciona</span>
+              <button
+                className="btn btn-secondary btn-sm"
+                onClick={()=>setPrintPreview(false)}
+              >✕ Fechar</button>
+              {!pdfUrl && (
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={()=>{ try { window.print(); } catch(e) { alert("Use Ctrl+P no teclado para imprimir."); } }}
+                  style={{background:"#16a34a",boxShadow:"none"}}
+                >🖨 Ctrl+P / Imprimir</button>
+              )}
+            </div>
+          </div>
+
+          {/* Se jsPDF gerou o arquivo, mostra iframe com PDF nativo do browser */}
+          {pdfUrl ? (
+            <div style={{flex:1,display:"flex",flexDirection:"column",padding:"0 0 12px"}}>
+              <div style={{textAlign:"center",padding:"8px",fontSize:".78rem",color:"rgba(255,255,255,.5)"}}>
+                Use os botões do visualizador de PDF para imprimir ou baixar 👇
+              </div>
+              <iframe
+                src={pdfUrl}
+                style={{flex:1,width:"100%",height:"calc(100vh - 90px)",border:"none",borderRadius:4}}
+                title="Cronograma PDF"
+              />
+            </div>
+          ) : (
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flex:1,gap:16,padding:40}}>
+              <div className="spinner" style={{width:48,height:48,borderWidth:4}}/>
+              <div style={{color:"rgba(255,255,255,.7)",fontSize:".9rem"}}>Gerando PDF…</div>
+              <div style={{color:"rgba(255,255,255,.4)",fontSize:".78rem"}}>Se demorar, pressione <strong>Ctrl+P</strong> para imprimir a página</div>
+            </div>
+          )}
+        </div>
+      )}
+      <div className="footer">Desenvolvido por Silvana Santana – Cerimonial Sorriso</div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// DASHBOARD
+// ─────────────────────────────────────────────
+function Dashboard({ user, weddings, onNew, onEdit, onSchedule, onDelete, onLogout, onChoosePlan }) {
+  const [del, setDel] = useState(null);
+  const [tab, setTab] = useState("weddings");
+
+  const confirmDelete = async () => { if (!del) return; await onDelete(del.id); setDel(null); };
+
+  const d = daysLeft(user.expiresAt);
+  const planUsed = user.plan?.used||0, planTotal = user.plan?.events||0;
+  const canCreate = user.isAdmin || (user.plan && planUsed < planTotal && !isExpired(user));
+  const noMoreEvents = user.plan && planUsed >= planTotal;
+
+  return (
+    <div className="app">
+      <div className="hdr">
+        <Logo/>
+        <div className="hdr-right">
+          {!user.isAdmin && <UsageWidget user={user}/>}
+          <div className="user-badge">
+            <div className="user-av">{user.name[0].toUpperCase()}</div>
+            <span className="user-name">{user.name}{user.isAdmin?" 👑":""}</span>
+          </div>
+          <button className="btn btn-ghost" onClick={onLogout}>Sair</button>
+        </div>
+      </div>
+
+      <div className="page">
+        {/* Warnings */}
+        {!user.isAdmin && !user.plan && (
+          <div style={{background:"#FEF2F2",border:"1px solid #FECACA",borderRadius:"var(--rs)",padding:"14px 18px",marginBottom:24,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+            <div style={{fontSize:".88rem",color:"#DC2626"}}>🚫 <strong>Nenhum plano ativo.</strong> Adquira um plano para gerar cronogramas.</div>
+            <button className="btn btn-primary btn-sm" onClick={onChoosePlan}>Ver Planos</button>
+          </div>
+        )}
+        {!user.isAdmin && user.plan && d<=7 && d>0 && (
+          <div style={{background:"#FEF3C7",border:"1px solid #FCD34D",borderRadius:"var(--rs)",padding:"12px 18px",marginBottom:24,fontSize:".88rem",color:"#92400E"}}>
+            ⚠ Seu acesso expira em <strong>{d} dia{d!==1?"s":""}</strong> ({new Date(user.expiresAt).toLocaleDateString("pt-BR")}). <span className="fc-link" onClick={onChoosePlan}>Renovar plano</span>
+          </div>
+        )}
+        {noMoreEvents && (
+          <div style={{background:"#FEF3C7",border:"1px solid #FCD34D",borderRadius:"var(--rs)",padding:"12px 18px",marginBottom:24,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+            <div style={{fontSize:".88rem",color:"#92400E"}}>📋 Você usou todos os <strong>{planTotal}</strong> cronogramas do plano atual. Adquira um novo plano para continuar.</div>
+            <button className="btn btn-primary btn-sm" onClick={onChoosePlan}>Novo Plano</button>
+          </div>
+        )}
+
+        {user.isAdmin && (
+          <div className="admin-tabs">
+            <div className={`admin-tab${tab==="weddings"?" active":""}`} onClick={()=>setTab("weddings")}>💍 Meus Casamentos</div>
+            <div className={`admin-tab${tab==="admin"?" active":""}`} onClick={()=>setTab("admin")}>👑 Gestão de Usuários</div>
+          </div>
+        )}
+
+        {tab==="admin" && user.isAdmin && <AdminPanel currentUser={user}/>}
+
+        {tab==="weddings" && (<>
+          <div className="page-hdr">
+            <div>
+              <div className="page-title">Meus Casamentos</div>
+              <div className="page-sub">{weddings.length} evento{weddings.length!==1?"s":""} cadastrado{weddings.length!==1?"s":""}</div>
+            </div>
+            {canCreate && <button className="btn btn-primary" onClick={onNew}>＋ Novo Casamento</button>}
+          </div>
+
+          <div className="grid-cards">
+            {weddings.length===0&&(
+              <div className="empty">
+                <div className="empty-icon">💍</div>
+                <div className="empty-title">Nenhum casamento cadastrado</div>
+                <div className="empty-text">Comece cadastrando o primeiro casamento</div>
+                {canCreate&&<button className="btn btn-primary" onClick={onNew}>＋ Cadastrar Casamento</button>}
+              </div>
+            )}
+            {weddings.map(w=>(
+              <div className="card" key={w.id}>
+                <div className="card-names">{w.brideName||"Noiva"} <span className="card-ring">⚭</span> {w.groomName||"Noivo"}</div>
+                <span className={`badge ${w.status==="done"?"badge-done":"badge-draft"}`}>{w.status==="done"?"✓ Completo":"Rascunho"}</span>
+                <div className="card-meta">
+                  {w.ceremonyDate&&<div className="card-meta-row">📅 {fmtDate(w.ceremonyDate)}{w.ceremonyTime?` às ${w.ceremonyTime}`:""}</div>}
+                  {w.receptionVenue&&<div className="card-meta-row">📍 {w.receptionVenue}</div>}
+                  {w.guestCount&&<div className="card-meta-row">👥 {w.guestCount} convidados</div>}
+                  <div className="card-meta-row" style={{fontSize:".73rem",color:"#aaa"}}>Atualizado: {new Date(w.updatedAt).toLocaleDateString("pt-BR")}</div>
+                </div>
+                <div className="card-actions">
+                  <button className="icon-btn" onClick={()=>onEdit(w)}>✏ Editar</button>
+                  <button className="icon-btn gold" onClick={()=>onSchedule(w)}>📋 Cronograma</button>
+                  <button className="icon-btn danger" onClick={()=>setDel(w)}>🗑</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>)}
+      </div>
+
+      {del&&(
+        <div className="overlay" onClick={()=>setDel(null)}>
+          <div className="modal" onClick={e=>e.stopPropagation()}>
+            <div className="modal-title">Excluir casamento?</div>
+            <div className="modal-sub">Excluir o casamento de <strong>{del.brideName} e {del.groomName}</strong>? Irreversível.</div>
+            <div className="modal-actions">
+              <button className="btn btn-secondary" onClick={()=>setDel(null)}>Cancelar</button>
+              <button className="btn btn-danger" onClick={confirmDelete}>Excluir</button>
+            </div>
+          </div>
+        </div>
+      )}
+      <div className="footer">Desenvolvido por Silvana Santana – Cerimonial Sorriso</div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// MAIN APP
+// ─────────────────────────────────────────────
+function App() {
+  const [view, setView] = useState("loading");
+  const [user, setUser] = useState(null);
+  const [weddings, setWeddings] = useState([]);
+  const [editing, setEditing] = useState(null);
+  const [scheduling, setScheduling] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [showPlan, setShowPlan] = useState(false);
+  const toastTimer = useRef(null);
+
+  useEffect(() => {
+    let el=document.getElementById("fc-css");
+    if (!el){el=document.createElement("style");el.id="fc-css";document.head.appendChild(el);}
+    el.textContent=CSS;
+    if (!document.getElementById("fc-fonts")){
+      const lnk=document.createElement("link");lnk.id="fc-fonts";lnk.rel="stylesheet";
+      lnk.href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap";
+      document.head.appendChild(lnk);
+    }
+  },[]);
+
+  useEffect(()=>{
+    (async()=>{
+      const session=await store.get("fc-session");
+      if (session){
+        const users=await store.get("fc-users")||[];
+        const u=users.find(x=>x.id===session.userId);
+        if (u){
+          if (isExpired(u)){ await store.del("fc-session"); setView("auth"); return; }
+          setUser(u); await loadWeddings(u.id); setView("dashboard"); return;
+        }
+      }
+      setView("auth");
+    })();
+  },[]);
+
+  const loadWeddings=async(uid)=>{
+    const keys=await store.list(`fc-wedding-${uid}-`);
+    const list=(await Promise.all(keys.map(k=>store.get(k)))).filter(Boolean);
+    list.sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt));
+    setWeddings(list); return list;
+  };
+
+  const showToast=(msg,type="info")=>{
+    clearTimeout(toastTimer.current); setToast({msg,type});
+    toastTimer.current=setTimeout(()=>setToast(null),3500);
+  };
+
+  // Refresh user from storage (e.g. after plan activation by admin)
+  const refreshUser = async () => {
+    const users=await store.get("fc-users")||[];
+    const u=users.find(x=>x.id===user?.id);
+    if (u) setUser(u);
+  };
+
+  const handleLogin=async(u)=>{ setUser(u); await loadWeddings(u.id); setView("dashboard"); };
+  const handleLogout=async()=>{ await store.del("fc-session"); setUser(null); setWeddings([]); setView("auth"); };
+  const handleNew=()=>{ setEditing(null); setView("form"); };
+  const handleEdit=(w)=>{ setEditing(w); setView("form"); };
+  const handleSchedule=(w)=>{ setScheduling(w); setView("schedule"); };
+  const handleSaveWedding=async()=>{ await loadWeddings(user.id); setView("dashboard"); };
+  const handleDelete=async(wid)=>{
+    await store.del(`fc-wedding-${user.id}-${wid}`);
+    await store.del(`fc-schedule-${user.id}-${wid}`);
+    setWeddings(ws=>ws.filter(w=>w.id!==wid));
+    showToast("Casamento excluído.","success");
+  };
+
+  if (view==="loading") return (
+    <div className="loading"><div className="spinner"/>
+      <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.2rem",color:"var(--mid)"}}>Carregando…</div>
+    </div>
+  );
+
+  return (
+    <>
+      {view==="auth" && <AuthScreen onLogin={handleLogin}/>}
+      {view==="dashboard" && <Dashboard user={user} weddings={weddings} onNew={handleNew} onEdit={handleEdit} onSchedule={handleSchedule} onDelete={handleDelete} onLogout={handleLogout} onChoosePlan={()=>setShowPlan(true)}/>}
+      {view==="form" && <WeddingForm wedding={editing} userId={user.id} onSave={handleSaveWedding} onCancel={()=>setView("dashboard")} showToast={showToast}/>}
+      {view==="schedule" && scheduling && <ScheduleEditor wedding={scheduling} userId={user.id} onBack={async()=>{ await refreshUser(); await loadWeddings(user.id); setView("dashboard"); }} showToast={showToast}/>}
+      {showPlan && <PlanSelector userName={user?.name||""} onClose={()=>setShowPlan(false)}/>}
+      {toast && <Toast msg={toast.msg} type={toast.type}/>}
+    </>
+  );
+}
+
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(React.createElement(App));
   </script>
 </body>
 </html>
