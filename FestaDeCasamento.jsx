@@ -1,1571 +1,1907 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 
-// ════════════════════════════════════════════
-//  CSS
-// ════════════════════════════════════════════
+// ─────────────────────────────────────────────
+// CSS
+// ─────────────────────────────────────────────
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap');
-*{margin:0;padding:0;box-sizing:border-box}
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --ivory:#FAF7F2;--cream:#F5EFE6;
-  --gold:#C9A84C;--gold-lt:#E8D5A3;
-  --wine:#7B2D3E;--wine-dk:#4A1E2B;
-  --text:#2C1A1A;--text-s:#6B5050;
-  --border:#E8D9C8;
-  --sh:0 4px 24px rgba(44,26,26,.08);
-  --sh-lg:0 12px 48px rgba(44,26,26,.15);
+  --sage:#AAB8A1;--sage-d:#7A8F73;--sage-l:#C4CFC0;
+  --gold:#C9A86A;--gold-d:#A8874E;--gold-l:#E2C98A;
+  --beige:#F5EDD9;--light:#FAF8F4;--gray:#E8E4E0;
+  --dark:#2A2A28;--mid:#6B6B65;--white:#fff;
+  --sh:0 2px 16px rgba(42,42,40,.08);--shl:0 8px 40px rgba(42,42,40,.13);
+  --r:14px;--rs:8px;--fd:'Cormorant Garamond',serif;--fb:'Jost',sans-serif;--tr:all .22s ease;
 }
-html,body{min-height:100vh;background:var(--ivory);color:var(--text);font-family:'Jost',sans-serif;font-size:15px;line-height:1.6}
-h1,h2,h3,h4{font-family:'Playfair Display',serif}
-
-.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
-.pg{min-height:100vh}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-@media(max-width:580px){.row2{grid-template-columns:1fr}}
-
-.nav{background:var(--wine-dk);padding:13px 0;position:sticky;top:0;z-index:50;box-shadow:0 2px 12px rgba(0,0,0,.3)}
-.nav-i{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.brand{font-family:'Playfair Display',serif;color:var(--gold-lt);font-size:1.15rem;line-height:1;cursor:pointer}
-.brand small{display:block;font-family:'Jost',sans-serif;font-size:.64rem;color:rgba(255,255,255,.38);font-weight:300;letter-spacing:.13em;text-transform:uppercase;margin-top:2px}
-.nav-r{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.nav-info{color:rgba(255,255,255,.55);font-size:.78rem;text-align:right;line-height:1.4}
-
-.btn{padding:9px 20px;border:none;cursor:pointer;font-family:'Jost',sans-serif;font-size:.84rem;font-weight:500;letter-spacing:.05em;text-transform:uppercase;transition:all .2s;border-radius:2px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
-.btn:disabled{opacity:.42;cursor:not-allowed;transform:none!important;box-shadow:none!important}
-.b-gold{background:var(--gold);color:#fff}
-.b-gold:hover:not(:disabled){background:#b8963f;transform:translateY(-1px);box-shadow:0 4px 14px rgba(201,168,76,.4)}
-.b-wine{background:var(--wine);color:#fff}
-.b-wine:hover:not(:disabled){background:var(--wine-dk);transform:translateY(-1px)}
-.b-out{background:transparent;border:1.5px solid var(--gold);color:var(--gold)}
-.b-out:hover:not(:disabled){background:var(--gold);color:#fff}
-.b-ghost{background:transparent;border:1.5px solid rgba(255,255,255,.28);color:#fff;font-size:.78rem;padding:7px 12px}
-.b-ghost:hover:not(:disabled){background:rgba(255,255,255,.1)}
-.b-muted{background:transparent;border:1.5px solid var(--border);color:var(--text-s);font-size:.78rem;padding:7px 12px}
-.b-muted:hover:not(:disabled){border-color:var(--text-s);color:var(--text)}
-.b-red{background:#c0392b;color:#fff}
-.b-red:hover:not(:disabled){background:#a93226}
-.b-sm{padding:6px 12px;font-size:.75rem}
-.b-lg{padding:13px 28px;font-size:.92rem}
-.b-full{width:100%;justify-content:center}
-
-.fg{margin-bottom:16px}
-.fg label{display:block;font-size:.74rem;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--text-s);margin-bottom:4px}
-.fg label.req::after{content:' *';color:var(--wine)}
-.fg input,.fg textarea,.fg select{width:100%;padding:9px 12px;border:1.5px solid var(--border);background:var(--ivory);font-family:'Jost',sans-serif;font-size:.9rem;color:var(--text);border-radius:2px;transition:border .2s;outline:none;line-height:1.5}
-.fg input:focus,.fg textarea:focus,.fg select:focus{border-color:var(--gold);background:#fff}
-.fg textarea{min-height:70px;resize:vertical}
-.fg select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 5 5-5' fill='none' stroke='%236B5050' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;padding-right:30px}
-.hint{font-size:.74rem;color:var(--text-s);margin-top:3px;font-style:italic}
-.err-t{font-size:.74rem;color:#c0392b;margin-top:3px}
-
-.yn{display:flex;gap:6px;margin-top:5px;flex-wrap:wrap}
-.yn-o{padding:7px 16px;border:1.5px solid var(--border);border-radius:2px;cursor:pointer;font-size:.84rem;transition:all .15s;user-select:none;font-weight:500}
-.yn-o.sel{border-color:var(--wine);background:var(--cream);color:var(--wine);font-weight:600}
-
-.pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
-.pill{padding:5px 14px;border:1.5px solid var(--border);border-radius:20px;cursor:pointer;font-size:.82rem;transition:all .15s;user-select:none}
-.pill.sel{border-color:var(--wine);background:var(--wine);color:#fff}
-
-.sec{margin-bottom:20px}
-.sec-h{background:var(--wine-dk);color:#fff;padding:10px 16px;border-radius:3px 3px 0 0;display:flex;align-items:center;gap:8px}
-.sec-h h3{font-size:.92rem;font-family:'Playfair Display',serif;font-weight:600}
-.sec-h small{font-size:.7rem;color:rgba(255,255,255,.45);font-family:'Jost',sans-serif;margin-left:auto}
-.sec-b{border:1px solid var(--border);border-top:none;padding:18px;border-radius:0 0 3px 3px;background:#fff}
-
-.card{background:#fff;border:1px solid var(--border);border-radius:4px;box-shadow:var(--sh)}
-.cp{padding:24px}
-.cps{padding:16px}
-
-.al{padding:10px 14px;border-radius:2px;font-size:.86rem;margin-bottom:12px;line-height:1.5}
-.al-e{background:#fff5f5;border:1px solid #feb2b2;color:#742a2a}
-.al-s{background:#f0fff4;border:1px solid #9ae6b4;color:#1a472a}
-.al-i{background:#fffbeb;border:1px solid var(--gold-lt);color:var(--wine-dk)}
-.al-w{background:#fff8e1;border:1px solid #ffe082;color:#6d4c00}
-
-.wz-steps{display:flex;align-items:flex-start;overflow-x:auto;padding:0 2px 6px;margin-bottom:22px;scrollbar-width:none}
-.wz-steps::-webkit-scrollbar{display:none}
-.wz-s{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;min-width:52px;cursor:pointer;opacity:.52;transition:opacity .2s}
-.wz-s.done,.wz-s.act{opacity:1}
-.wz-dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0;transition:all .2s}
-.dot-p{background:var(--border);color:var(--text-s)}
-.dot-d{background:var(--wine);color:#fff}
-.dot-a{background:var(--gold);color:#fff;box-shadow:0 0 0 4px rgba(201,168,76,.22)}
-.wz-lbl{font-size:.63rem;text-align:center;color:var(--text-s);max-width:60px;line-height:1.2}
-.wz-lbl.act{color:var(--wine);font-weight:600}
-.wz-con{flex:1;height:2px;background:var(--border);margin-top:12px;min-width:6px;flex-shrink:0}
-.wz-con.done{background:var(--wine)}
-
-.tabs{display:flex;border-bottom:2px solid var(--border);margin-bottom:20px;overflow-x:auto;scrollbar-width:none}
-.tabs::-webkit-scrollbar{display:none}
-.tab{padding:9px 16px;cursor:pointer;font-size:.84rem;font-weight:500;color:var(--text-s);border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:all .2s}
-.tab.act{color:var(--wine);border-bottom-color:var(--wine);font-weight:600}
-.tab:hover:not(.act){color:var(--text)}
-
-.sc-out{font-family:'Cormorant Garamond',serif;font-size:1.05rem;line-height:1.9;color:var(--text)}
-.sc-out h2{font-family:'Playfair Display',serif;font-size:1.15rem;color:var(--wine);margin:22px 0 6px;text-transform:uppercase;letter-spacing:.06em;padding-bottom:4px;border-bottom:1px solid var(--border)}
-.sc-out h3{font-family:'Playfair Display',serif;font-size:1rem;color:var(--wine-dk);margin:14px 0 4px}
-.sc-out strong{color:var(--wine-dk);font-weight:700}
-.sc-out .cb{display:inline-block;width:13px;height:13px;border:1.5px solid var(--wine);border-radius:2px;margin-right:5px;vertical-align:middle;flex-shrink:0}
-
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px}
-@media(max-width:580px){.stats{grid-template-columns:1fr}}
-.stat{text-align:center;padding:18px 12px}
-.st-n{font-family:'Playfair Display',serif;font-size:2.1rem;color:var(--wine);line-height:1}
-.st-l{font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text-s);margin-top:4px}
-.st-s{font-size:.76rem;color:var(--text-s);margin-top:3px}
-
-.ev{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border:1px solid var(--border);border-radius:3px;background:#fff;margin-bottom:7px;gap:10px;flex-wrap:wrap;transition:border-color .2s}
-.ev:hover{border-color:var(--gold-lt)}
-.ev-n{font-family:'Playfair Display',serif;font-size:1rem}
-.ev-m{font-size:.77rem;color:var(--text-s);margin-top:2px}
-.ev-a{display:flex;gap:5px;flex-wrap:wrap}
-
-.pg-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
-@media(max-width:780px){.pg-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:430px){.pg-grid{grid-template-columns:1fr}}
-.pc{border:1.5px solid var(--border);padding:22px 14px;text-align:center;cursor:pointer;transition:all .2s;border-radius:4px;position:relative;background:#fff}
-.pc:hover{border-color:var(--gold);transform:translateY(-2px);box-shadow:var(--sh)}
-.pc.sel{border-color:var(--wine);background:var(--cream)}
-.pc.feat{border-color:var(--gold)}
-.pc-badge{position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--gold);color:#fff;font-size:.63rem;padding:2px 9px;letter-spacing:.1em;text-transform:uppercase;border-radius:10px;white-space:nowrap;font-weight:600}
-.pc-name{font-family:'Playfair Display',serif;font-size:.92rem;color:var(--wine-dk);margin-bottom:7px}
-.pc-price{font-family:'Playfair Display',serif;font-size:1.65rem;color:var(--wine)}
-.pc-per{font-size:.7rem;color:var(--text-s);margin-top:2px}
-.pc-disc{font-size:.68rem;color:#4a7c59;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-top:3px}
-.pc-sc{font-size:.76rem;color:var(--text-s);margin-top:7px}
-
-.hero{background:linear-gradient(155deg,var(--wine-dk) 0%,var(--wine) 65%,#8B3A4A 100%);padding:70px 0 56px;text-align:center;position:relative;overflow:hidden}
-.hero::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 15% 50%,rgba(201,168,76,.07) 0%,transparent 55%),radial-gradient(circle at 85% 20%,rgba(201,168,76,.05) 0%,transparent 45%)}
-.h-orn{font-family:'Cormorant Garamond',serif;font-size:.95rem;color:var(--gold-lt);letter-spacing:.5em;opacity:.6;margin-bottom:10px;font-style:italic}
-.h-t{font-family:'Playfair Display',serif;font-size:clamp(2rem,5.5vw,3.5rem);color:#fff;line-height:1.1;margin-bottom:7px}
-.h-t span{color:var(--gold)}
-.h-s{font-family:'Cormorant Garamond',serif;font-size:1.15rem;color:var(--gold-lt);font-style:italic;margin-bottom:16px;opacity:.88}
-.h-by{font-size:.73rem;color:rgba(255,255,255,.38);letter-spacing:.18em;text-transform:uppercase;margin-bottom:28px}
-.h-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-
-.feats{padding:50px 0;background:var(--cream)}
-.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
-@media(max-width:640px){.feat-grid{grid-template-columns:1fr}}
-.feat{text-align:center;padding:22px 16px}
-.feat-ic{font-size:1.7rem;margin-bottom:9px}
-.feat-t{font-family:'Playfair Display',serif;font-size:1rem;color:var(--wine-dk);margin-bottom:6px}
-.feat-d{font-size:.84rem;color:var(--text-s);line-height:1.7}
-
-.spin{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--wine);border-radius:50%;animation:sp .7s linear infinite}
-@keyframes sp{to{transform:rotate(360deg)}}
-.load-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:52px;text-align:center}
-.load-t{font-family:'Cormorant Garamond',serif;font-size:1rem;color:var(--text-s);font-style:italic;max-width:280px;line-height:1.6}
-
-.prog-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:14px}
-.prog-fill{height:100%;background:linear-gradient(90deg,var(--wine),var(--gold));transition:width .4s;border-radius:2px}
-
-.bdg{display:inline-block;padding:2px 9px;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;border-radius:2px}
-.bdg-g{background:var(--gold-lt);color:var(--wine-dk)}
-.bdg-w{background:var(--wine);color:#fff}
-.bdg-gr{background:#d4edda;color:#155724}
-.bdg-r{background:#f8d7da;color:#721c24}
-
-.footer{background:var(--wine-dk);padding:20px 0;text-align:center}
-.foot-t{font-size:.72rem;color:rgba(255,255,255,.32);letter-spacing:.1em}
-
-.ph{margin-bottom:22px}
-.ph h2{font-family:'Playfair Display',serif;font-size:1.55rem;color:var(--wine-dk)}
-.ph p{font-size:.84rem;color:var(--text-s);margin-top:3px}
-
-.ent-blk{border:1px solid var(--border);border-radius:3px;padding:13px;margin-bottom:11px;background:#fff;transition:border-color .2s}
-.ent-blk:has(.sel){border-color:var(--gold-lt)}
-.ent-title{font-weight:600;font-size:.86rem;color:var(--wine-dk);font-family:'Playfair Display',serif}
-
-@media print{.nav,.wz-steps,.ev-a,.btn,.tabs,.footer,.al,.ph p{display:none!important}.cp{padding:0}.sc-out{font-size:.95rem}}
+body{font-family:var(--fb);background:var(--light);color:var(--dark);min-height:100vh}
+.app{min-height:100vh;display:flex;flex-direction:column}
+.auth{min-height:100vh;display:grid;grid-template-columns:1fr 1fr}
+@media(max-width:768px){.auth{grid-template-columns:1fr}.auth-left{display:none}}
+.auth-left{background:linear-gradient(150deg,var(--sage) 0%,var(--sage-d) 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px;position:relative;overflow:hidden}
+.auth-left::before{content:'';position:absolute;top:-120px;right:-120px;width:400px;height:400px;border-radius:50%;background:rgba(201,168,106,.14)}
+.auth-left::after{content:'';position:absolute;bottom:-80px;left:-80px;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.07)}
+.auth-quote{font-family:var(--fd);font-size:1.6rem;font-style:italic;color:rgba(255,255,255,.9);text-align:center;line-height:1.6;position:relative;z-index:1;margin-top:32px}
+.auth-quote-attr{font-family:var(--fb);font-size:.8rem;color:rgba(255,255,255,.6);text-align:center;margin-top:12px;position:relative;z-index:1}
+.auth-right{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 40px;overflow-y:auto}
+.auth-form{width:100%;max-width:400px}
+.auth-title{font-family:var(--fd);font-size:2rem;font-weight:600;color:var(--dark);margin-bottom:6px}
+.auth-sub{color:var(--mid);font-size:.9rem;margin-bottom:32px}
+.field{margin-bottom:18px}
+.field label{display:block;font-size:.75rem;font-weight:600;color:var(--mid);text-transform:uppercase;letter-spacing:.09em;margin-bottom:7px}
+.field input,.field textarea,.field select{width:100%;padding:11px 15px;border:1.5px solid var(--gray);border-radius:var(--rs);font-family:var(--fb);font-size:.92rem;color:var(--dark);background:var(--white);transition:var(--tr);outline:none}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,106,.14)}
+.field textarea{resize:vertical;min-height:90px}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:11px 22px;border-radius:var(--rs);font-family:var(--fb);font-size:.88rem;font-weight:500;cursor:pointer;transition:var(--tr);border:none;outline:none;white-space:nowrap}
+.btn-primary{background:linear-gradient(135deg,var(--gold) 0%,var(--gold-d) 100%);color:#fff;box-shadow:0 4px 14px rgba(201,168,106,.32)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(201,168,106,.45)}
+.btn-primary:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.btn-secondary{background:#fff;color:var(--dark);border:1.5px solid var(--gray)}
+.btn-secondary:hover{border-color:var(--gold);color:var(--gold-d)}
+.btn-sage{background:var(--sage);color:#fff}
+.btn-sage:hover{background:var(--sage-d)}
+.btn-green{background:#16a34a;color:#fff}
+.btn-green:hover{background:#15803d}
+.btn-ghost{background:transparent;color:var(--mid);padding:8px 12px}
+.btn-ghost:hover{color:var(--gold-d)}
+.btn-danger{background:#FEF2F2;color:#DC2626;border:1.5px solid #FECACA}
+.btn-danger:hover{background:#DC2626;color:#fff}
+.btn-full{width:100%;justify-content:center}
+.btn-sm{padding:7px 14px;font-size:.8rem}
+.fc-link{color:var(--gold-d);cursor:pointer;font-weight:500;transition:var(--tr)}
+.fc-link:hover{color:var(--gold)}
+.hdr{background:#fff;border-bottom:1px solid var(--gray);padding:14px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:var(--sh)}
+@media(max-width:768px){.hdr{padding:10px 16px}}
+.hdr-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.user-badge{display:flex;align-items:center;gap:8px;padding:7px 14px;background:var(--beige);border-radius:50px}
+.user-av{width:30px;height:30px;background:var(--sage);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:.8rem;flex-shrink:0}
+.user-name{font-size:.85rem;color:var(--dark);font-weight:500}
+@media(max-width:480px){.user-name{display:none}}
+.page{max-width:1200px;margin:0 auto;padding:40px 32px}
+@media(max-width:768px){.page{padding:24px 16px}}
+.page-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:16px}
+.page-title{font-family:var(--fd);font-size:2.2rem;font-weight:500;color:var(--dark)}
+.page-sub{color:var(--mid);font-size:.9rem;margin-top:4px}
+.grid-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:22px}
+@media(max-width:768px){.grid-cards{grid-template-columns:1fr}}
+.card{background:#fff;border-radius:var(--r);padding:26px;box-shadow:var(--sh);border:1px solid rgba(170,184,161,.18);transition:var(--tr)}
+.card:hover{transform:translateY(-2px);box-shadow:var(--shl)}
+.card-names{font-family:var(--fd);font-size:1.4rem;font-weight:600;color:var(--dark);margin-bottom:4px}
+.card-ring{color:var(--gold);margin:0 6px}
+.card-meta{display:flex;flex-direction:column;gap:5px;margin:14px 0}
+.card-meta-row{display:flex;align-items:center;gap:7px;font-size:.83rem;color:var(--mid)}
+.badge{display:inline-flex;align-items:center;padding:3px 11px;border-radius:50px;font-size:.72rem;font-weight:600}
+.badge-draft{background:#FEF3C7;color:#92400E}
+.badge-done{background:#DCFCE7;color:#166534}
+.card-actions{display:flex;flex-wrap:wrap;gap:7px;padding-top:16px;border-top:1px solid var(--gray)}
+.icon-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:var(--rs);font-size:.78rem;font-weight:500;cursor:pointer;transition:var(--tr);border:none;background:var(--light);color:var(--mid)}
+.icon-btn:hover{background:var(--beige);color:var(--dark)}
+.icon-btn.gold{background:rgba(201,168,106,.1);color:var(--gold-d)}
+.icon-btn.gold:hover{background:var(--gold);color:#fff}
+.icon-btn.sage{background:rgba(170,184,161,.12);color:var(--sage-d)}
+.icon-btn.sage:hover{background:var(--sage);color:#fff}
+.icon-btn.green{background:rgba(22,163,74,.1);color:#16a34a}
+.icon-btn.green:hover{background:#16a34a;color:#fff}
+.icon-btn.danger:hover{background:#FEE2E2;color:#DC2626}
+.empty{grid-column:1/-1;text-align:center;padding:80px 20px}
+.empty-icon{font-size:4rem;margin-bottom:18px}
+.empty-title{font-family:var(--fd);font-size:1.8rem;color:var(--dark);margin-bottom:8px}
+.empty-text{color:var(--mid);margin-bottom:24px;font-size:.95rem}
+.form-layout{display:grid;grid-template-columns:250px 1fr;min-height:calc(100vh - 70px)}
+@media(max-width:900px){.form-layout{grid-template-columns:1fr}}
+.form-sidebar{background:#fff;border-right:1px solid var(--gray);padding:28px 16px;position:sticky;top:70px;height:calc(100vh - 70px);overflow-y:auto}
+@media(max-width:900px){.form-sidebar{display:none}}
+.fsb-title{font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--mid);margin-bottom:14px;padding:0 6px}
+.fsb-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:var(--rs);cursor:pointer;transition:var(--tr);font-size:.82rem;color:var(--mid);margin-bottom:2px}
+.fsb-item:hover{background:var(--beige);color:var(--dark)}
+.fsb-item.active{background:var(--sage);color:#fff}
+.fsb-num{width:20px;height:20px;border-radius:50%;background:var(--gray);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0}
+.fsb-item.active .fsb-num{background:rgba(255,255,255,.3)}
+.form-main{padding:36px;overflow-y:auto}
+@media(max-width:768px){.form-main{padding:18px 14px}}
+.fsec{background:#fff;border-radius:var(--r);padding:28px;margin-bottom:20px;box-shadow:var(--sh);border:1px solid rgba(170,184,161,.13);scroll-margin-top:20px}
+.fsec-title{font-family:var(--fd);font-size:1.45rem;font-weight:600;color:var(--dark);display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.fsec-bar{width:36px;height:2px;background:linear-gradient(90deg,var(--gold),var(--sage));border-radius:2px;margin-bottom:18px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:580px){.g2{grid-template-columns:1fr}}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+@media(max-width:680px){.g3{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){.g3{grid-template-columns:1fr}}
+.chk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:9px;margin-bottom:10px}
+.chk-item{display:flex;align-items:center;gap:9px;padding:9px 13px;border-radius:var(--rs);border:1.5px solid var(--gray);cursor:pointer;transition:var(--tr);font-size:.83rem;color:var(--mid);user-select:none}
+.chk-item:hover{border-color:var(--sage);background:rgba(170,184,161,.07)}
+.chk-item.on{border-color:var(--sage);background:rgba(170,184,161,.14);color:var(--dark)}
+.chk-item input{accent-color:var(--sage-d);width:15px;height:15px;cursor:pointer;flex-shrink:0}
+.supp-card{border:1px solid var(--gray);border-radius:var(--rs);padding:18px;margin-bottom:14px;position:relative;background:var(--light)}
+.supp-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.supp-label{font-family:var(--fd);font-size:1rem;font-weight:600;color:var(--dark)}
+.sched-page{padding:36px;max-width:1100px;margin:0 auto}
+@media(max-width:768px){.sched-page{padding:18px 14px}}
+.sched-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:14px}
+.sched-doc{background:#fff;border-radius:var(--r);padding:40px;box-shadow:var(--shl)}
+@media(max-width:640px){.sched-doc{padding:20px 14px}}
+.doc-hdr{text-align:center;margin-bottom:32px;padding-bottom:22px;border-bottom:2px solid var(--beige)}
+.doc-title{font-family:var(--fd);font-size:2rem;font-weight:600;color:var(--gold-d);margin-bottom:2px}
+.doc-company{font-family:var(--fd);font-size:1rem;color:var(--mid);font-style:italic;margin-bottom:18px}
+.doc-info{display:flex;justify-content:center;flex-wrap:wrap;gap:22px}
+.doc-info-item{display:flex;align-items:center;gap:6px;font-size:.83rem;color:var(--mid)}
+.sched-table{width:100%;border-collapse:collapse}
+.sched-table thead th{background:var(--sage);color:#fff;padding:11px 15px;text-align:left;font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+.sched-table thead th:first-child{border-radius:8px 0 0 0}
+.sched-table thead th:last-child{border-radius:0 8px 0 0}
+.sched-row{border-bottom:1px solid var(--gray);transition:var(--tr)}
+.sched-row:hover{background:rgba(170,184,161,.05)}
+.sched-row.drag-over{border-top:2px solid var(--gold)}
+.sched-row.dragging{opacity:.45}
+.sched-row td{padding:10px 14px;font-size:.88rem;vertical-align:top}
+.sched-row td:first-child{font-family:var(--fb);font-weight:700;color:var(--dark);white-space:nowrap;font-size:.9rem;width:90px}
+.sched-row td:nth-child(3){width:130px}
+.sched-row td:last-child{width:40px;text-align:center}
+.cell-in{width:100%;border:none;background:transparent;font-family:var(--fb);font-size:.88rem;color:var(--dark);padding:4px 6px;border-radius:4px;transition:var(--tr);resize:none}
+.cell-in:hover{background:rgba(201,168,106,.08);cursor:text}
+.cell-in:focus{outline:none;background:var(--beige);box-shadow:0 0 0 2px var(--gold)}
+.add-row-bar{display:flex;gap:10px;align-items:flex-end;padding:14px;background:var(--light);border-radius:0 0 8px 8px;border:1px solid var(--gray);border-top:none;flex-wrap:wrap}
+.add-row-bar .field{margin-bottom:0;flex:1;min-width:100px}
+.overlay{position:fixed;inset:0;background:rgba(42,42,40,.52);backdrop-filter:blur(4px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px}
+.modal{background:#fff;border-radius:var(--r);padding:34px;max-width:560px;width:100%;box-shadow:var(--shl);animation:mIn .2s ease;max-height:90vh;overflow-y:auto}
+.modal-lg{max-width:760px}
+@keyframes mIn{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal-title{font-family:var(--fd);font-size:1.6rem;font-weight:600;color:var(--dark);margin-bottom:6px}
+.modal-sub{color:var(--mid);font-size:.88rem;margin-bottom:24px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:24px}
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:18px}
+.spinner{width:38px;height:38px;border:3px solid var(--gray);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.gen-box{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 40px;text-align:center}
+.gen-rings{position:relative;width:72px;height:72px;margin:0 auto 24px}
+.gen-ring{position:absolute;inset:0;border-radius:50%;border:3px solid transparent;animation:gring 1.4s cubic-bezier(.5,0,.5,1) infinite}
+.gen-ring:nth-child(1){border-top-color:var(--gold)}
+.gen-ring:nth-child(2){border-right-color:var(--sage);animation-delay:-.35s}
+.gen-ring:nth-child(3){border-bottom-color:var(--gold-d);animation-delay:-.7s}
+@keyframes gring{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:22px;right:22px;background:var(--dark);color:#fff;padding:11px 20px;border-radius:var(--rs);font-size:.85rem;z-index:2000;display:flex;align-items:center;gap:9px;animation:tIn .25s ease;box-shadow:var(--shl)}
+.toast.success{background:#166534}
+.toast.error{background:#DC2626}
+@keyframes tIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.autosave{display:flex;align-items:center;gap:6px;font-size:.73rem;color:var(--mid)}
+.as-dot{width:6px;height:6px;border-radius:50%;background:#22C55E}
+.as-dot.saving{background:var(--gold);animation:pulse 1s ease infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.footer{text-align:center;padding:18px;color:var(--mid);font-size:.78rem;border-top:1px solid var(--gray);background:#fff;font-family:var(--fd);font-style:italic;margin-top:auto}
+hr.div{border:none;border-top:1px solid var(--gray);margin:20px 0}
+.admin-tabs{display:flex;gap:4px;margin-bottom:28px;border-bottom:2px solid var(--gray);padding-bottom:0}
+.admin-tab{padding:10px 20px;cursor:pointer;font-size:.88rem;font-weight:500;color:var(--mid);border-bottom:2px solid transparent;margin-bottom:-2px;transition:var(--tr)}
+.admin-tab:hover{color:var(--dark)}
+.admin-tab.active{color:var(--gold-d);border-bottom-color:var(--gold)}
+.users-table{width:100%;border-collapse:collapse;background:#fff;border-radius:var(--r);overflow:hidden;box-shadow:var(--sh)}
+.users-table th{background:var(--sage);color:#fff;padding:11px 16px;text-align:left;font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.users-table td{padding:11px 16px;border-bottom:1px solid var(--gray);font-size:.84rem;vertical-align:middle}
+.users-table tr:last-child td{border-bottom:none}
+.users-table tr:hover td{background:rgba(170,184,161,.04)}
+.exp-ok{color:#166534;background:#DCFCE7;padding:3px 10px;border-radius:50px;font-size:.72rem;font-weight:600}
+.exp-warn{color:#92400E;background:#FEF3C7;padding:3px 10px;border-radius:50px;font-size:.72rem;font-weight:600}
+.exp-expired{color:#DC2626;background:#FEE2E2;padding:3px 10px;border-radius:50px;font-size:.72rem;font-weight:600}
+.exp-admin{color:#A8874E;background:#FEF9EC;padding:3px 10px;border-radius:50px;font-size:.72rem;font-weight:600}
+.usage-bar-wrap{background:var(--gray);border-radius:50px;height:8px;overflow:hidden;margin-top:4px}
+.usage-bar{height:8px;border-radius:50px;transition:width .6s ease}
+.usage-bar.ok{background:var(--sage)}
+.usage-bar.warn{background:var(--gold)}
+.usage-bar.full{background:#DC2626}
+.plan-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin:20px 0}
+.plan-card{border:2px solid var(--gray);border-radius:var(--r);padding:20px;cursor:pointer;transition:var(--tr);text-align:center;position:relative}
+.plan-card:hover{border-color:var(--sage);background:rgba(170,184,161,.06)}
+.plan-card.selected{border-color:var(--gold);background:rgba(201,168,106,.08)}
+.plan-card .plan-name{font-family:var(--fd);font-size:1.2rem;font-weight:600;margin-bottom:6px}
+.plan-card .plan-price{font-size:1.5rem;font-weight:700;color:var(--gold-d);margin-bottom:4px}
+.plan-card .plan-events{font-size:.82rem;color:var(--mid);margin-bottom:8px}
+.plan-card .plan-discount{position:absolute;top:10px;right:10px;background:var(--sage);color:#fff;padding:2px 8px;border-radius:50px;font-size:.68rem;font-weight:700}
+.plan-active-box{background:linear-gradient(135deg,rgba(170,184,161,.15),rgba(201,168,106,.12));border:1px solid rgba(201,168,106,.3);border-radius:var(--r);padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.usage-mini{font-size:.78rem;color:var(--mid);margin-top:2px}
+.wa-panel{background:#fff;border-radius:var(--r);padding:28px;box-shadow:var(--sh);margin-top:24px}
+.wa-panel-title{font-family:var(--fd);font-size:1.4rem;font-weight:600;color:var(--dark);margin-bottom:6px}
+.wa-supp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin:18px 0}
+.wa-supp-item{border:1.5px solid var(--gray);border-radius:var(--rs);padding:12px 14px;cursor:pointer;transition:var(--tr);display:flex;align-items:center;gap:10px;font-size:.85rem}
+.wa-supp-item:hover{border-color:var(--sage)}
+.wa-supp-item.sel{border-color:#16a34a;background:rgba(22,163,74,.07)}
+.wa-supp-item input{accent-color:#16a34a;flex-shrink:0}
+.wa-preview{background:var(--light);border:1px solid var(--gray);border-radius:var(--rs);padding:16px;font-size:.82rem;line-height:1.7;white-space:pre-wrap;max-height:220px;overflow-y:auto;font-family:monospace;color:var(--dark)}
+@media print{#fc-preview-bar{display:none!important}body>*:not(#fc-print-preview){display:none!important}#fc-print-preview{position:static!important;overflow:visible!important;padding:10mm!important}}
+#fc-print-preview{display:none}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:var(--light)}
+::-webkit-scrollbar-thumb{background:var(--sage-l);border-radius:3px}
+@media print{.hdr,.form-sidebar,.sched-hdr,.icon-btn,.add-row-bar,.footer,.btn{display:none!important}.sched-doc{box-shadow:none!important;padding:0!important}}
 `;
 
-// ════════════════════════════════════════════
-//  CONSTANTS
-// ════════════════════════════════════════════
+// ─────────────────────────────────────────────
+// UTILITIES & CONSTANTS
+// ─────────────────────────────────────────────
+const uid = () => Math.random().toString(36).slice(2, 11);
+const fmtDate = (d) => { if (!d) return "—"; const [y, m, day] = d.split("-"); return `${day}/${m}/${y}`; };
+const now = () => new Date().toISOString();
+const addDays = (d, n) => new Date(new Date(d).getTime() + n * 864e5).toISOString();
+const daysLeft = (exp) => { if (!exp) return Infinity; return Math.ceil((new Date(exp) - new Date()) / 864e5); };
+const isExpired = (u) => { if (u.isAdmin || !u.expiresAt) return false; return daysLeft(u.expiresAt) <= 0; };
+
 const PLANS = [
-  { id:'single', name:'1 Roteiro', scripts:1, days:30, price:29.90, disc:0, desc:'Ideal para um evento único' },
-  { id:'trio',   name:'Até 3 Roteiros', scripts:3, days:30, price:29.90, disc:0.05, desc:'Até 3 eventos em 30 dias', feat:false },
-  { id:'quint',  name:'Até 5 Roteiros', scripts:5, days:30, price:29.90, disc:0.10, desc:'Até 5 eventos em 30 dias', feat:true },
-  { id:'anual',  name:'Plano Anual', scripts:60, days:365, price:29.90, disc:0.20, desc:'Até 60 roteiros por ano', feat:false },
-];
-const planTotal = p => p.price * p.scripts * (1 - p.disc);
-const fmt  = n => n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-const fmtD = d => d ? new Date(d+'T12:00:00').toLocaleDateString('pt-BR') : '—';
-
-const ADMIN = {
-  id:'adm001', username:'silvana', password:'Sorriso@2024',
-  name:'Silvana Santana', email:'silvana@cerimonial.sorriso.com',
-  isAdmin:true, planId:'admin', planLabel:'Administradora Vitalícia',
-  expiresAt:null, scriptsAllowed:999999, scriptsUsed:0,
-  createdAt: new Date().toISOString(),
-};
-
-const INIT_FORM = {
-  noivaNome:'', noivaTel:'', noivoNome:'', noivoTel:'',
-  dataCas:'', horario:'', local:'', localRec:'',
-  dataSignif:'nao', dataSignifDesc:'',
-  noivaNasc:'', noivoNasc:'', noivaCid:'', noivoCid:'', cidAtual:'',
-  temFilhos:false, filhosList:'', filhosHist:'',
-  nPaiNome:'', nMaeNome:'', nPaisObs:'',
-  vPaiNome:'', vMaeNome:'', vPaisObs:'',
-  noiva_irm:'', noivo_irm:'',
-  relPais:'',
-  padNoiva:'', padNoivo:'', padEntrada:'casal', posAltar:'pDireita',
-  pajens:'',
-  temRel:false, relNome:'', tipoCer:'simbolico',
-  celebNome:'', celebTel:'',
-  entBib:  { sim:false, nome:'', mus:'' },
-  entCel:  { sim:false, nome:'', mus:'' },
-  entPais: { sim:false, quem:'', acomp:'', mus:'' },
-  entPad:  { sim:true,  obs:'', mus:'' },
-  entCri:  { sim:false, nomes:'', mus:'' },
-  entNoivo:{ cond:'', sig:'', mus:'' },
-  entNoiva:{ cond:'', sig:'', mus:'' },
-  entAli:  { sim:false, quem:'', mus:'' },
-  votos:false,
-  bencao:{ sim:false, tipo:'pais' },
-  efeito:'bolhas', efeitoOut:'',
-  musLouv:'', musFotos:'', musSaida:'',
-  comoConhec:'', quemApresen:'', primImpres:'',
-  pedNam:'', pedCas:'',
-  momDif:'', comoSuper:'', momFeliz:'',
-  vSobreN:'', nSobreV:'',
-  vFrase:'', nFrase:'',
-  homen:false, homenQuem:'',
-  filhosPartic:'',
-  naoMenc:'',
-  msgFinal:'',
-};
-
-const WIZ = [
-  { id:1, lbl:'Casal',    icon:'💍', title:'Informações Básicas' },
-  { id:2, lbl:'Família',  icon:'👪', title:'Família' },
-  { id:3, lbl:'Padrinhos',icon:'🌸', title:'Padrinhos & Crianças' },
-  { id:4, lbl:'Cerimônia',icon:'⛪', title:'Religião & Cerimônia' },
-  { id:5, lbl:'Entradas', icon:'🚶', title:'Entradas — 1ª Parte' },
-  { id:6, lbl:'Músicas',  icon:'🎵', title:'Entradas — 2ª Parte' },
-  { id:7, lbl:'História', icon:'💛', title:'História do Casal' },
-  { id:8, lbl:'Final',    icon:'✨', title:'Personalidades & Final' },
+  { id: "single",  name: "Avulso",   events: 1,  days: 30,  basePrice: 9.90, discount: 0,  get price() { return +(this.basePrice * this.events * (1 - this.discount/100)).toFixed(2); } },
+  { id: "trio",    name: "Trio",      events: 3,  days: 30,  basePrice: 9.90, discount: 5,  get price() { return +(this.basePrice * this.events * (1 - this.discount/100)).toFixed(2); } },
+  { id: "quintet", name: "Quinteto",  events: 5,  days: 30,  basePrice: 9.90, discount: 10, get price() { return +(this.basePrice * this.events * (1 - this.discount/100)).toFixed(2); } },
+  { id: "annual",  name: "Anual",     events: 60, days: 365, basePrice: 9.90, discount: 20, get price() { return +(this.basePrice * this.events * (1 - this.discount/100)).toFixed(2); } },
 ];
 
-// ════════════════════════════════════════════
-//  STORAGE DB  (window.storage API)
-// ════════════════════════════════════════════
-let _inited = false;
-const db = {
-  async init() {
-    if (_inited) return; _inited = true;
-    try { await window.storage.get('u:silvana'); }
-    catch { try { await window.storage.set('u:silvana', JSON.stringify(ADMIN)); } catch {} }
-  },
-  async getUser(un) {
-    try { const r = await window.storage.get('u:'+un); return r ? JSON.parse(r.value) : null; }
-    catch { return null; }
-  },
-  async saveUser(u) {
-    try { await window.storage.set('u:'+u.username, JSON.stringify(u)); } catch {}
-  },
-  async getAllUsers() {
-    try {
-      const ks = await window.storage.list('u:');
-      if (!ks?.keys?.length) return [];
-      const arr = await Promise.all(ks.keys.map(async k => {
-        try { const r = await window.storage.get(k); return r ? JSON.parse(r.value) : null; } catch { return null; }
-      }));
-      return arr.filter(Boolean);
-    } catch { return []; }
-  },
-  async getEvents(uid) {
-    try {
-      const ks = await window.storage.list('ev:'+uid+':');
-      if (!ks?.keys?.length) return [];
-      const arr = await Promise.all(ks.keys.map(async k => {
-        try { const r = await window.storage.get(k); return r ? JSON.parse(r.value) : null; } catch { return null; }
-      }));
-      return arr.filter(Boolean).sort((a,b) => new Date(b.createdAt)-new Date(a.createdAt));
-    } catch { return []; }
-  },
-  async saveEvent(ev) {
-    try { await window.storage.set(`ev:${ev.userId}:${ev.id}`, JSON.stringify(ev)); } catch {}
-  },
-  async deleteEvent(uid, eid) {
-    try { await window.storage.delete(`ev:${uid}:${eid}`); } catch {}
-  },
+// Keywords to match schedule items per supplier category
+const CATEGORY_KEYWORDS = {
+  "Buffet":          ["jantar","almoço","entrada","serviço","garçom","refeição","buffet","caldo","sobremesa","café","prato","maître","banquete","mesa posta","saída das entradas"],
+  "Drinks":          ["drink","bar","chopp","bebida","brinde","taça","espumante","drinks","bar de"],
+  "Chopp":           ["chopp","chope","cerveja","drinks","bar"],
+  "DJ":              ["dj","música","som","playlist","mix","balada","pista"],
+  "Banda":           ["banda","música","repertório","palco","cantor","passagem de som","teste de som"],
+  "Sonorização":     ["som","microfone","sonorização","teste de som","passagem de som","técnico de som"],
+  "Decoração":       ["decoração","decorador","montagem","flores","arranjo","desmontagem","montagem da decoração"],
+  "Foto":            ["foto","fotógrafo","making of","sessão de fotos","cobertura fotográfica","fotos protocolares","fotos","fotografia"],
+  "Filmagem":        ["filmagem","filmmaker","vídeo","love story","cobertura","filme"],
+  "Celebrante":      ["cerimônia","celebrante","cortejo","altar","entrada dos noivos","encerramento da cerimônia"],
+  "Cabine de fotos": ["cabine","cabine de foto"],
+  "Plataforma 360°": ["360","plataforma 360"],
+  "Segurança":       ["segurança","acesso","portaria","entrada","credenciamento"],
+  "Espaço":          ["espaço","salão","abertura","entrega","espaço kids","desmontagem geral"],
+  "Doces":           ["doce","candy","mesa de doces","doceria"],
+  "Bolo":            ["bolo","corte do bolo","servido na mesa","bolo cenográfico"],
+  "Lembrancinhas":   ["lembrancinha","lembrança","distribuição de lembrancinhas","lembrancinhas"],
 };
 
-// ════════════════════════════════════════════
-//  PROMPT  &  SCRIPT GENERATION
-// ════════════════════════════════════════════
-function buildPrompt(d) {
-  const N = d.noivaNome || 'Noiva', V = d.noivoNome || 'Noivo';
-  const couple = `${N} & ${V}`;
-  const L = v => v && String(v).trim() !== '' ? v : null;
-  const lines = [
-    `NOIVA: ${N}${L(d.noivaTel) ? ' | Tel: '+d.noivaTel : ''}`,
-    `NOIVO: ${V}${L(d.noivoTel) ? ' | Tel: '+d.noivoTel : ''}`,
-    L(d.dataCas) && `DATA: ${d.dataCas}${L(d.horario) ? ' às '+d.horario : ''}`,
-    L(d.local) && `LOCAL DA CERIMÔNIA: ${d.local}`,
-    L(d.localRec) && `LOCAL DA RECEPÇÃO: ${d.localRec}`,
-    d.dataSignif==='sim' && L(d.dataSignifDesc) && `SIGNIFICADO DA DATA: ${d.dataSignifDesc}`,
-    L(d.cidAtual) && `CIDADE: ${d.cidAtual}`,
-    d.temFilhos && L(d.filhosList) && `FILHOS: ${d.filhosList}`,
-    d.temFilhos && L(d.filhosHist) && `HISTÓRIA COM FILHOS: ${d.filhosHist}`,
-    L(d.nPaiNome) && `PAI DA NOIVA: ${d.nPaiNome}`,
-    L(d.nMaeNome) && `MÃE DA NOIVA: ${d.nMaeNome}`,
-    L(d.nPaisObs) && `OBS. FAMÍLIA NOIVA: ${d.nPaisObs}`,
-    L(d.vPaiNome) && `PAI DO NOIVO: ${d.vPaiNome}`,
-    L(d.vMaeNome) && `MÃE DO NOIVO: ${d.vMaeNome}`,
-    L(d.vPaisObs) && `OBS. FAMÍLIA NOIVO: ${d.vPaisObs}`,
-    L(d.relPais) && `RELAÇÃO COM OS PAIS: ${d.relPais}`,
-    L(d.padNoiva) && `PADRINHOS/MADRINHAS DA NOIVA: ${d.padNoiva}`,
-    L(d.padNoivo) && `PADRINHOS/MADRINHAS DO NOIVO: ${d.padNoivo}`,
-    L(d.pajens) && `PAJENS E DAMINHAS: ${d.pajens}`,
-    `TIPO DE CERIMÔNIA: ${d.tipoCer||'simbólica'}`,
-    d.temRel && L(d.relNome) && `RELIGIÃO: ${d.relNome}`,
-    L(d.celebNome) && `CELEBRANTE: ${d.celebNome}`,
-    d.votos && `VOTOS: personalizados pelo casal`,
-    d.bencao.sim && `BÊNÇÃO: ${d.bencao.tipo==='pais'?'apenas dos pais':d.bencao.tipo==='pf'?'dos pais e familiares':'de todos os convidados'}`,
-    d.efeito && d.efeito!=='nenhum' && `EFEITO DE SAÍDA: ${d.efeito==='outro'?d.efeitoOut:d.efeito}`,
-    '',
-    '--- ENTRADAS EM ORDEM ---',
-    d.entBib.sim  && `• Bíblia: ${d.entBib.nome}${d.entBib.mus?' | Música: '+d.entBib.mus:''}`,
-    d.entCel.sim  && `• Celebrante: ${d.entCel.nome}${d.entCel.mus?' | Música: '+d.entCel.mus:''}`,
-    d.entPais.sim && `• Pais: ${d.entPais.quem}${d.entPais.acomp?' ('+d.entPais.acomp+')':''}${d.entPais.mus?' | Música: '+d.entPais.mus:''}`,
-    d.entPad.sim  && `• Padrinhos/Madrinhas${d.entPad.mus?' | Música: '+d.entPad.mus:''}${d.entPad.obs?' | Obs: '+d.entPad.obs:''}`,
-    d.entCri.sim  && `• Crianças: ${d.entCri.nomes}${d.entCri.mus?' | Música: '+d.entCri.mus:''}`,
-    `• Noivo: conduzido por ${d.entNoivo.cond||'não informado'}${d.entNoivo.sig?' ('+d.entNoivo.sig+')':''}${d.entNoivo.mus?' | Música: '+d.entNoivo.mus:''}`,
-    `• Noiva: conduzida por ${d.entNoiva.cond||'não informado'}${d.entNoiva.sig?' ('+d.entNoiva.sig+')':''}${d.entNoiva.mus?' | Música: '+d.entNoiva.mus:''}`,
-    d.entAli.sim  && `• Alianças: ${d.entAli.quem}${d.entAli.mus?' | Música: '+d.entAli.mus:''}`,
-    '',
-    L(d.musLouv)  && `MÚSICA PÓS-PREGAÇÃO/LOUVOR: ${d.musLouv}`,
-    L(d.musFotos) && `MÚSICA FOTOS PROTOCOLARES: ${d.musFotos}`,
-    L(d.musSaida) && `MÚSICA SAÍDA DO CASAL: ${d.musSaida}`,
-    '',
-    '--- HISTÓRIA DO CASAL ---',
-    L(d.comoConhec)  && `Como se conheceram: ${d.comoConhec}`,
-    L(d.quemApresen) && `Primeiro encontro: ${d.quemApresen}`,
-    L(d.primImpres)  && `Primeira impressão mútua: ${d.primImpres}`,
-    L(d.pedNam)      && `Pedido de namoro: ${d.pedNam}`,
-    L(d.pedCas)      && `Pedido de casamento: ${d.pedCas}`,
-    L(d.momDif)      && `Momento difícil: ${d.momDif}`,
-    L(d.comoSuper)   && `Como superaram: ${d.comoSuper}`,
-    L(d.momFeliz)    && `Momento mais marcante: ${d.momFeliz}`,
-    L(d.vSobreN)     && `Noivo sobre a noiva: ${d.vSobreN}`,
-    L(d.nSobreV)     && `Noiva sobre o noivo: ${d.nSobreV}`,
-    L(d.vFrase)      && `Noivo: "Minha vida mudou quando você ${d.vFrase}"`,
-    L(d.nFrase)      && `Noiva: "Minha vida mudou quando você ${d.nFrase}"`,
-    d.homen && L(d.homenQuem)    && `Homenagem a: ${d.homenQuem}`,
-    L(d.filhosPartic) && `Participação dos filhos: ${d.filhosPartic}`,
-    L(d.msgFinal)     && `Tom/valores da cerimônia: ${d.msgFinal}`,
-    L(d.naoMenc)      && `NÃO MENCIONAR: ${d.naoMenc}`,
-  ].filter(Boolean).join('\n');
+const filterItemsForCategory = (items, category) => {
+  const kws = CATEGORY_KEYWORDS[category] || [];
+  if (!kws.length) return items;
+  return items.filter(it =>
+    kws.some(k => (it.activity || "").toLowerCase().includes(k) || (it.responsible || "").toLowerCase().includes(k))
+  );
+};
 
-  return `Você é especialista em cerimoniais de casamento com 20 anos de atuação. Com base nos dados abaixo, crie três documentos distintos e profissionais para a cerimônia de ${couple}.
+// Storage
+const store = {
+  async get(k)    { try { const r = await window.storage.get(k); return r ? JSON.parse(r.value) : null; } catch { return null; } },
+  async set(k, v) { try { await window.storage.set(k, JSON.stringify(v)); } catch {} },
+  async del(k)    { try { await window.storage.delete(k); } catch {} },
+  async list(p)   { try { const r = await window.storage.list(p); return r?.keys || []; } catch { return []; } },
+};
 
-REGRA FUNDAMENTAL — PROIBIDO usar estas expressões clichês: "dois corações", "alma gêmea", "se completam", "para sempre" de forma vaga, "eternamente", "príncipe/princesa encantado(a)", "felizes para sempre", "construir um lar", "novo capítulo", "jornada juntos", "metade de mim", "amor verdadeiro" no sentido genérico. Use linguagem precisa, genuína e baseada na história REAL deste casal específico.
+// ─────────────────────────────────────────────
+// LOGO
+// ─────────────────────────────────────────────
+const LOGO_SRC = "data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCATiBOIDASIAAhEBAxEB/8QAHQABAAICAwEBAAAAAAAAAAAAAAYHBQgCAwQBCf/EAFQQAQABAwMABQYICwIKCgIDAAABAgMEBQYRBxIhMUETUWFxgZEIFCI2obGy0RUjMjNCUmJyc3TBFpQkNENUVYKDkpOiRGNkdYSzwtLh8CbxJVPi/8QAGgEBAAMBAQEAAAAAAAAAAAAAAAECBAMFBv/EADIRAQACAgEDAgUCBQQDAQAAAAABAgMRBBIhMUFRBRMiMjNhcRQjQoGRUqGx8BU00cH/2gAMAwEAAhEDEQA/ANMgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA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AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD//Z";
 
-DADOS:
-${lines}
-
----
-Gere os três documentos a seguir. Inicie CADA UM pelo marcador exato (três sinais de igual, o código, três sinais de igual), sem texto antes do primeiro marcador.
-
-===DOC1===
-Título: ROTEIRO BÁSICO — ${couple.toUpperCase()}${d.dataCas ? ' — ' + d.dataCas.toUpperCase() : ''}
-Destinatários: Fotógrafo e Videomaker
-
-Liste de forma objetiva, numerada e em ordem cronológica todos os momentos da cerimônia. Para cada item indique: número, nome do momento, nome(s) completo(s) da(s) pessoa(s), estimativa de duração e a música que será tocada. Use **negrito** para nomes e títulos de músicas.
-
-===DOC2===
-Título: ROTEIRO COMPLETO DA CERIMÔNIA — ${couple}${d.dataCas ? ' — ' + d.dataCas : ''}
-Destinatários: Mestre de Cerimônias e Equipe de Cerimonialistas
-
-Inclua: orientações de posicionamento antes do início; cada momento com o texto narrativo que o MC pode usar (marcado como VOZ MC:); narrativa da história do casal integrada nos momentos adequados; votos (se personalizados, indique [VOTOS PERSONALIZADOS DO CASAL]); troca de alianças; bênção; pronunciamento oficial; orientações de saída e pós-cerimônia. Use ## para cada seção principal. Baseie a narrativa nas histórias reais informadas.
-
-===DOC3===
-Título: CHECKLIST DE ENTRADAS — ${couple}${d.dataCas ? ' — ' + d.dataCas : ''}
-Verificação no dia da cerimônia
-
-Liste numerada e em ordem cronológica TODAS as pessoas que entram:
-N. [ ] NOME COMPLETO — Função / Relação — 🎵 "Título da música"`;
-}
-
-function parseScripts(txt) {
-  const get = (m1, m2) => {
-    const i1 = txt.indexOf(m1); if (i1<0) return '';
-    const i2 = m2 ? txt.indexOf(m2) : txt.length;
-    return txt.slice(i1+m1.length, i2>0?i2:txt.length).trim();
-  };
-  return {
-    basic:     get('===DOC1===','===DOC2==='),
-    complete:  get('===DOC2===','===DOC3==='),
-    checklist: get('===DOC3===', null),
-    generatedAt: new Date().toISOString(),
-  };
-}
-
-async function callClaude(prompt) {
-  const r = await fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:4000, messages:[{role:'user',content:prompt}] }),
-  });
-  const data = await r.json();
-  if (!r.ok) throw new Error(data.error?.message||'Erro na API');
-  return data.content.map(c=>c.text||'').join('');
-}
-
-function renderMd(txt) {
-  if (!txt) return '';
-  return txt
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/^## (.+)$/gm,'<h2>$1</h2>')
-    .replace(/^### (.+)$/gm,'<h3>$1</h3>')
-    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
-    .replace(/\[ \]/g,'<span class="cb"></span>')
-    .replace(/\n/g,'<br>');
-}
-
-// ════════════════════════════════════════════
-//  UI PRIMITIVES
-// ════════════════════════════════════════════
-const F = ({label,hint,req,children,err}) => (
-  <div className="fg">
-    {label && <label className={req?'req':''}>{label}</label>}
-    {children}
-    {hint && <div className="hint">{hint}</div>}
-    {err  && <div className="err-t">{err}</div>}
-  </div>
-);
-const In = ({value,onChange,placeholder,type='text',...p}) => (
-  <input type={type} value={value||''} onChange={e=>onChange(e.target.value)} placeholder={placeholder} {...p}/>
-);
-const Ta = ({value,onChange,placeholder,rows=3}) => (
-  <textarea value={value||''} onChange={e=>onChange(e.target.value)} placeholder={placeholder} rows={rows}/>
-);
-const YN = ({value,onChange,opts=[{v:true,l:'Sim'},{v:false,l:'Não'}]}) => (
-  <div className="yn">
-    {opts.map(o=>(
-      <div key={String(o.v)} className={`yn-o${value===o.v?' sel':''}`} onClick={()=>onChange(o.v)}>{o.l}</div>
-    ))}
-  </div>
-);
-const Pills = ({value,onChange,options}) => (
-  <div className="pills">
-    {options.map(o=>(
-      <div key={o.v} className={`pill${value===o.v?' sel':''}`} onClick={()=>onChange(o.v)}>{o.l}</div>
-    ))}
-  </div>
-);
-const Al = ({type='i',children}) => <div className={`al al-${type}`}>{children}</div>;
-const Sec = ({title,sub,children}) => (
-  <div className="sec">
-    <div className="sec-h"><h3>{title}</h3>{sub&&<small>{sub}</small>}</div>
-    <div className="sec-b">{children}</div>
-  </div>
-);
-
-// ════════════════════════════════════════════
-//  LANDING PAGE
-// ════════════════════════════════════════════
-function LandingPage({onGo}) {
+function Logo({ size="md", light=false }) {
+  const sc = size==="lg"?1.8:size==="sm"?0.7:1;
+  const h = Math.round(52*sc);
   return (
-    <div>
-      <div className="hero">
-        <div className="wrap">
-          <div className="h-orn">✦ Cerimônia Personalizada ✦</div>
-          <h1 className="h-t">Festa de <span>Casamento</span></h1>
-          <div className="h-s">Construa a cerimônia que conta a história de vocês</div>
-          <div className="h-by">Silvana Santana — Cerimonial Sorriso</div>
-          <div className="h-btns">
-            <button className="btn b-gold b-lg" onClick={()=>onGo('register')}>Começar Agora</button>
-            <button className="btn b-ghost" onClick={()=>onGo('login')}>Entrar</button>
-          </div>
-        </div>
-      </div>
-
-      <div className="feats">
-        <div className="wrap">
-          <div style={{textAlign:'center',marginBottom:30}}>
-            <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:'1.65rem',color:'var(--wine-dk)'}}>Três documentos essenciais</h2>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:'1.05rem',fontStyle:'italic',color:'var(--text-s)',marginTop:5}}>
-              Gerados com base na história real de cada casal — sem clichês
-            </div>
-          </div>
-          <div className="feat-grid">
-            {[
-              {ic:'📋',t:'Roteiro Básico',d:'Para fotógrafo e videomaker. Lista objetiva de cada entrada, nomes e músicas na ordem cronológica.'},
-              {ic:'🎤',t:'Roteiro Completo',d:'Para o mestre de cerimônias e a equipe. Com textos narrativos, orientações de voz e toda a sequência.'},
-              {ic:'✅',t:'Checklist de Entradas',d:'Nome de cada pessoa, função e música na ordem exata. Para conferência no dia da cerimônia.'},
-            ].map(f=>(
-              <div key={f.t} className="feat card cp">
-                <div className="feat-ic">{f.ic}</div>
-                <div className="feat-t">{f.t}</div>
-                <div className="feat-d">{f.d}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div style={{background:'#fff',padding:'50px 0'}}>
-        <div className="wrap">
-          <div style={{textAlign:'center',marginBottom:26}}>
-            <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:'1.65rem',color:'var(--wine-dk)'}}>Planos e Valores</h2>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:'1.05rem',fontStyle:'italic',color:'var(--text-s)',marginTop:5}}>
-              Escolha o plano ideal para seu volume de eventos
-            </div>
-          </div>
-          <div className="pg-grid">
-            {PLANS.map(p=>(
-              <div key={p.id} className={`pc${p.feat?' feat':''}`} onClick={()=>onGo('register',p.id)}>
-                {p.feat && <div className="pc-badge">Mais popular</div>}
-                <div className="pc-name">{p.name}</div>
-                <div className="pc-price">{fmt(planTotal(p))}</div>
-                <div className="pc-per">{p.days===365?'por ano':'por 30 dias'}</div>
-                {p.disc>0 && <div className="pc-disc">{p.disc*100}% de desconto</div>}
-                <div className="pc-sc">{p.scripts===60?'Até 60 roteiros/ano':`${p.scripts} roteiro${p.scripts>1?'s':''}`}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{textAlign:'center',marginTop:10,fontSize:'.77rem',color:'var(--text-s)'}}>
-            Roteiros não utilizados não são acumulativos para o período seguinte. Pagamento via Systeme.io.
-          </div>
-          <div style={{textAlign:'center',marginTop:20}}>
-            <button className="btn b-wine b-lg" onClick={()=>onGo('register')}>Criar Conta</button>
-          </div>
-        </div>
-      </div>
-
-      <div className="footer">
-        <div className="foot-t">© {new Date().getFullYear()} Festa de Casamento · Silvana Santana – Cerimonial Sorriso</div>
+    <div style={{display:"flex",alignItems:"center",gap:Math.round(10*sc)}}>
+      <img
+        src={LOGO_SRC}
+        alt="A Central do Casamento"
+        style={{height:h,width:"auto",objectFit:"contain",
+          filter: light ? "brightness(0) invert(1)" : "none"}}
+      />
+      <div>
+        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:Math.round(15*sc),fontWeight:600,color:light?"#fff":"#2A2A28",letterSpacing:"0.02em",lineHeight:1.1}}>Festa de Casamento</div>
+        <div style={{fontFamily:"'Jost',sans-serif",fontSize:Math.round(8*sc),color:light?"rgba(255,255,255,.7)":"#6B6B65",letterSpacing:"0.08em",textTransform:"uppercase",lineHeight:1.3}}>Silvana Santana · Cerimonial Sorriso</div>
       </div>
     </div>
   );
 }
 
-// ════════════════════════════════════════════
-//  AUTH PAGE  (login + register)
-// ════════════════════════════════════════════
-function AuthPage({onLogin, onGo, defaultPlan}) {
-  const [mode, setMode]  = useState('login');
-  const [form, setForm]  = useState({username:'',password:'',name:'',email:'',planId:defaultPlan||'single',confirmPass:''});
-  const [err,  setErr]   = useState('');
-  const [busy, setBusy]  = useState(false);
-
-  const set = k => v => setForm(f=>({...f,[k]:v}));
-
-  async function doLogin() {
-    setErr(''); setBusy(true);
-    try {
-      await db.init();
-      const user = await db.getUser(form.username.trim().toLowerCase());
-      if (!user || user.password !== form.password) { setErr('Usuário ou senha incorretos.'); setBusy(false); return; }
-      if (!user.isAdmin && user.expiresAt && new Date() > new Date(user.expiresAt)) {
-        setErr('Acesso expirado. Entre em contato com o administrador para renovar.'); setBusy(false); return;
-      }
-      onLogin(user);
-    } catch { setErr('Erro ao conectar. Tente novamente.'); }
-    setBusy(false);
-  }
-
-  async function doRegister() {
-    setErr('');
-    if (!form.username||!form.password||!form.name) { setErr('Preencha todos os campos obrigatórios.'); return; }
-    if (form.password !== form.confirmPass) { setErr('As senhas não conferem.'); return; }
-    if (form.password.length < 6) { setErr('A senha deve ter pelo menos 6 caracteres.'); return; }
-    const unClean = form.username.trim().toLowerCase().replace(/\s/g,'');
-    if (!unClean) { setErr('Nome de usuário inválido.'); return; }
-    setBusy(true);
-    try {
-      await db.init();
-      const existing = await db.getUser(unClean);
-      if (existing) { setErr('Este nome de usuário já está em uso.'); setBusy(false); return; }
-      const plan = PLANS.find(p=>p.id===form.planId)||PLANS[0];
-      const now  = new Date();
-      const exp  = new Date(now.getTime() + plan.days*24*60*60*1000);
-      const user = {
-        id: 'u'+Date.now(), username: unClean, password: form.password,
-        name: form.name.trim(), email: form.email.trim(),
-        planId: plan.id, planLabel: plan.name,
-        expiresAt: exp.toISOString(), scriptsAllowed: plan.scripts, scriptsUsed: 0,
-        isAdmin: false, createdAt: now.toISOString(),
-      };
-      await db.saveUser(user);
-      onLogin(user);
-    } catch { setErr('Erro ao criar conta. Tente novamente.'); }
-    setBusy(false);
-  }
-
-  const plan = PLANS.find(p=>p.id===form.planId)||PLANS[0];
-
-  return (
-    <div style={{minHeight:'100vh',background:'var(--cream)',display:'flex',alignItems:'flex-start',justifyContent:'center',padding:'36px 20px'}}>
-      <div style={{width:'100%',maxWidth:490}}>
-        <div style={{textAlign:'center',marginBottom:26}}>
-          <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:.9+'rem',color:'var(--gold)',letterSpacing:'.4em',opacity:.65,marginBottom:4}}>✦ ✦ ✦</div>
-          <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:'1.85rem',color:'var(--wine-dk)'}}>Festa de Casamento</h1>
-          <div style={{fontSize:'.72rem',color:'var(--text-s)',marginTop:3,letterSpacing:'.1em',textTransform:'uppercase'}}>Cerimonial Sorriso</div>
-        </div>
-
-        <div className="card cp">
-          <div style={{display:'flex',gap:0,marginBottom:20,borderBottom:'2px solid var(--border)'}}>
-            {['login','register'].map(m=>(
-              <button key={m} onClick={()=>setMode(m)} style={{flex:1,padding:'8px',background:'none',border:'none',cursor:'pointer',fontFamily:"'Jost',sans-serif",fontSize:'.84rem',fontWeight:mode===m?600:400,color:mode===m?'var(--wine)':'var(--text-s)',borderBottom:mode===m?'2px solid var(--wine)':'2px solid transparent',marginBottom:'-2px',textTransform:'uppercase',letterSpacing:'.06em',transition:'all .2s'}}>
-                {m==='login'?'Entrar':'Nova Conta'}
-              </button>
-            ))}
-          </div>
-
-          {err && <Al type="e">{err}</Al>}
-
-          {mode==='login' ? (
-            <>
-              <F label="Usuário" req><In value={form.username} onChange={set('username')} placeholder="seu usuário"/></F>
-              <F label="Senha" req>
-                <In type="password" value={form.password} onChange={set('password')} placeholder="sua senha"
-                    onKeyDown={e=>e.key==='Enter'&&doLogin()}/>
-              </F>
-              <button className="btn b-wine b-full" onClick={doLogin} disabled={busy}>{busy?'Entrando...':'Entrar'}</button>
-              <div style={{marginTop:14,padding:'10px 12px',background:'var(--cream)',borderRadius:2,fontSize:'.78rem',color:'var(--text-s)'}}>
-                <strong>Acesso admin:</strong> usuário <code>silvana</code> / senha <code>Sorriso@2024</code>
-              </div>
-            </>
-          ) : (
-            <>
-              <F label="Nome completo" req><In value={form.name} onChange={set('name')} placeholder="Seu nome completo"/></F>
-              <F label="E-mail"><In type="email" value={form.email} onChange={set('email')} placeholder="seu@email.com"/></F>
-              <div className="row2">
-                <F label="Usuário" req><In value={form.username} onChange={set('username')} placeholder="sem espaços"/></F>
-                <F label="Senha" req><In type="password" value={form.password} onChange={set('password')} placeholder="min. 6 chars"/></F>
-              </div>
-              <F label="Confirmar senha" req>
-                <In type="password" value={form.confirmPass} onChange={set('confirmPass')} placeholder="repita a senha"/>
-              </F>
-
-              <div style={{marginBottom:14}}>
-                <div style={{fontSize:'.72rem',fontWeight:600,letterSpacing:'.09em',textTransform:'uppercase',color:'var(--text-s)',marginBottom:8}}>Plano</div>
-                <div className="pg-grid" style={{gridTemplateColumns:'repeat(2,1fr)'}}>
-                  {PLANS.map(p=>(
-                    <div key={p.id} className={`pc${form.planId===p.id?' sel':''}`} onClick={()=>set('planId')(p.id)} style={{padding:'13px 10px'}}>
-                      {p.feat && <div className="pc-badge">Popular</div>}
-                      <div className="pc-name" style={{fontSize:'.84rem'}}>{p.name}</div>
-                      <div className="pc-price" style={{fontSize:'1.3rem'}}>{fmt(planTotal(p))}</div>
-                      <div className="pc-per">{p.days===365?'/ano':'/30 dias'}</div>
-                      {p.disc>0 && <div className="pc-disc">{p.disc*100}% off</div>}
-                    </div>
-                  ))}
-                </div>
-                <div style={{marginTop:9,padding:'9px 12px',background:'var(--cream)',borderRadius:2,border:'1px solid var(--border)',fontSize:'.8rem',color:'var(--wine-dk)',lineHeight:1.5}}>
-                  <strong>{plan.name}:</strong> {plan.scripts===60?'Até 60 roteiros':`${plan.scripts} roteiro${plan.scripts>1?'s':''}`} em {plan.days===365?'12 meses':'30 dias'} — <strong>{fmt(planTotal(plan))}</strong>
-                  {plan.disc>0 && ` (${plan.disc*100}% de desconto)`}
-                </div>
-                <div style={{fontSize:'.72rem',color:'var(--text-s)',marginTop:5,fontStyle:'italic'}}>
-                  ⚠️ Pagamento via Systeme.io — acesso liberado após confirmação pelo administrador.
-                </div>
-              </div>
-
-              <button className="btn b-gold b-full" onClick={doRegister} disabled={busy}>{busy?'Criando conta...':'Criar Conta'}</button>
-            </>
-          )}
-        </div>
-
-        <div style={{textAlign:'center',marginTop:14}}>
-          <button onClick={()=>onGo('landing')} className="btn b-muted">← Voltar ao início</button>
-        </div>
-      </div>
-    </div>
-  );
+function Toast({msg,type}) {
+  if(!msg) return null;
+  return <div className={`toast ${type}`}>{type==="success"?"✓":type==="error"?"✗":"ℹ"} {msg}</div>;
 }
 
-// ════════════════════════════════════════════
-//  NAV
-// ════════════════════════════════════════════
-function Nav({user, onLogout, onNavigate}) {
-  const rem = user.isAdmin ? '∞' : Math.max(0, user.scriptsAllowed - user.scriptsUsed);
-  return (
-    <nav className="nav">
-      <div className="wrap nav-i">
-        <div className="brand" onClick={()=>onNavigate('dashboard')}>
-          Festa de Casamento
-          <small>Cerimonial Sorriso</small>
-        </div>
-        <div className="nav-r">
-          {user.isAdmin ? (
-            <div className="nav-info"><div style={{color:'var(--gold-lt)',fontSize:'.82rem'}}>Admin Vitalício ✦</div></div>
-          ) : (
-            <div className="nav-info">
-              <div><strong style={{color:rem===0?'#ff8f8f':'var(--gold-lt)'}}>{rem}</strong> roteiro{rem!==1?'s':''} disponível{rem!==1?'is':''}</div>
-              <div style={{fontSize:'.68rem',opacity:.65}}>Expira: {fmtD(user.expiresAt)}</div>
-            </div>
-          )}
-          {user.isAdmin && <button className="btn b-ghost" onClick={()=>onNavigate('admin')}>Painel Admin</button>}
-          <button className="btn b-ghost" onClick={onLogout}>Sair</button>
-        </div>
-      </div>
-    </nav>
-  );
-}
+// ─────────────────────────────────────────────
+// PLAN SELECTOR MODAL
+// ─────────────────────────────────────────────
+function PlanSelector({ userName, onSelect, onClose }) {
+  const [chosen, setChosen] = useState(null);
+  const [showMsg, setShowMsg] = useState(false);
 
-// ════════════════════════════════════════════
-//  DASHBOARD
-// ════════════════════════════════════════════
-function Dashboard({user, onNavigate, onNewEvent, onViewEvent, onEditEvent}) {
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const ADMIN_WA = "5566999999999"; // ← Troque pelo seu número WhatsApp
 
-  useEffect(()=>{
-    db.getEvents(user.id).then(evs=>{ setEvents(evs); setLoading(false); });
-  },[user.id]);
+  const buildWaMsg = (plan) => {
+    const p = PLANS.find(x => x.id === plan);
+    return `Olá, Silvana! Sou ${userName} e gostaria de contratar o plano *${p.name}* do sistema Festa de Casamento.\n\nDetalhes:\n- Plano: ${p.name}\n- Cronogramas: ${p.events}\n- Validade: ${p.days} dias\n- Valor: R$ ${p.price.toFixed(2).replace(".",",")}\n\nAguardo a confirmação. Obrigado(a)!`;
+  };
 
-  const rem       = user.isAdmin ? Infinity : Math.max(0, user.scriptsAllowed - user.scriptsUsed);
-  const isExpired = !user.isAdmin && user.expiresAt && new Date() > new Date(user.expiresAt);
-  const canCreate = !isExpired && (user.isAdmin || rem > 0);
-
-  const handleDelete = async ev => {
-    if (!window.confirm(`Excluir o roteiro de "${ev.brideNome||'Noiva'} & ${ev.groomNome||'Noivo'}"?`)) return;
-    await db.deleteEvent(user.id, ev.id);
-    setEvents(es=>es.filter(e=>e.id!==ev.id));
+  const handleRequest = () => {
+    if (!chosen) return;
+    const msg = buildWaMsg(chosen);
+    const url = `https://wa.me/${ADMIN_WA}?text=${encodeURIComponent(msg)}`;
+    window.open(url, "_blank");
+    setShowMsg(true);
   };
 
   return (
-    <div className="wrap" style={{paddingTop:30,paddingBottom:50}}>
-      <div className="ph">
-        <h2>Olá, {user.name.split(' ')[0]}</h2>
-        <p>Gerencie seus roteiros de cerimônia personalizados</p>
-      </div>
+    <div className="overlay">
+      <div className="modal modal-lg">
+        <div className="modal-title">Escolha seu Plano</div>
+        <div className="modal-sub">Selecione a quantidade de cronogramas que precisará. Não acumulam para o próximo período.</div>
 
-      {isExpired && <Al type="e">Sua assinatura expirou em {fmtD(user.expiresAt)}. Entre em contato com o administrador para renovar.</Al>}
-      {!user.isAdmin && rem===0 && !isExpired && <Al type="w">Você atingiu o limite de roteiros do seu plano. Renove para continuar gerando.</Al>}
-
-      {/* Stats */}
-      <div className="stats">
-        <div className="card stat">
-          <div className="st-n">{user.isAdmin?'∞':user.scriptsUsed}</div>
-          <div className="st-l">Roteiros gerados</div>
-        </div>
-        <div className="card stat">
-          <div className="st-n" style={{color:rem===0&&!user.isAdmin?'#c0392b':undefined}}>{user.isAdmin?'∞':rem}</div>
-          <div className="st-l">Disponíveis</div>
-          {!user.isAdmin && <div className="st-s">{user.planLabel}</div>}
-        </div>
-        <div className="card stat">
-          <div className="st-n" style={{fontSize:'1.1rem',paddingTop:8}}>
-            {user.isAdmin ? 'Vitalício' : fmtD(user.expiresAt)}
-          </div>
-          <div className="st-l">{user.isAdmin ? 'Plano' : 'Válido até'}</div>
-        </div>
-      </div>
-
-      {!user.isAdmin && (
-        <div className="prog-bar">
-          <div className="prog-fill" style={{width:`${Math.min(100,(user.scriptsUsed/user.scriptsAllowed)*100)}%`}}/>
-        </div>
-      )}
-
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14,flexWrap:'wrap',gap:8}}>
-        <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:'1.15rem',color:'var(--wine-dk)'}}>Eventos</h3>
-        <button className="btn b-gold" onClick={onNewEvent} disabled={!canCreate}>+ Novo Roteiro</button>
-      </div>
-
-      {loading ? (
-        <div className="load-wrap"><div className="spin"/><div className="load-t">Carregando...</div></div>
-      ) : events.length===0 ? (
-        <div className="card cp" style={{textAlign:'center',padding:'36px 24px'}}>
-          <div style={{fontSize:'2rem',marginBottom:10}}>💍</div>
-          <h3 style={{fontFamily:"'Playfair Display',serif",color:'var(--wine-dk)',marginBottom:6}}>Nenhum roteiro ainda</h3>
-          <div style={{fontSize:'.86rem',color:'var(--text-s)',marginBottom:18}}>Crie seu primeiro roteiro de cerimônia personalizado</div>
-          <button className="btn b-gold" onClick={onNewEvent} disabled={!canCreate}>Criar Primeiro Roteiro</button>
-        </div>
-      ) : (
-        events.map(ev=>(
-          <div key={ev.id} className="ev">
-            <div style={{flex:1,minWidth:0}}>
-              <div className="ev-n">{ev.brideNome||'Noiva'} & {ev.groomNome||'Noivo'}</div>
-              <div className="ev-m">
-                {ev.dataCas?`📅 ${ev.dataCas}`:''}{ev.local?` · 📍 ${ev.local}`:''}
-                {' · '}<span className={`bdg ${ev.scripts?'bdg-gr':'bdg-g'}`}>{ev.scripts?'Roteiro gerado':'Rascunho'}</span>
-              </div>
-            </div>
-            <div className="ev-a">
-              {ev.scripts && <button className="btn b-out b-sm" onClick={()=>onViewEvent(ev)}>Ver Roteiro</button>}
-              <button className="btn b-wine b-sm" onClick={()=>onEditEvent(ev)}>Editar</button>
-              <button className="btn b-red b-sm" onClick={()=>handleDelete(ev)}>Excluir</button>
-            </div>
-          </div>
-        ))
-      )}
-    </div>
-  );
-}
-
-// ════════════════════════════════════════════
-//  SCRIPT VIEWER
-// ════════════════════════════════════════════
-function ScriptViewer({event, onBack, onRegenerate}) {
-  const [tab, setTab] = useState('basic');
-  const scripts = event.scripts || {};
-
-  const TABS = [
-    {id:'basic',    label:'Roteiro Básico',    sub:'Fotógrafo & Videomaker'},
-    {id:'complete', label:'Roteiro Completo',  sub:'Mestre de Cerimônias'},
-    {id:'checklist',label:'Checklist',         sub:'Entradas no dia'},
-  ];
-
-  const copyText = () => {
-    const txt = scripts[tab]||'';
-    if (navigator.clipboard) navigator.clipboard.writeText(txt).then(()=>alert('Texto copiado!'));
-  };
-
-  return (
-    <div className="wrap" style={{paddingTop:26,paddingBottom:50}}>
-      <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:14,flexWrap:'wrap'}}>
-        <button className="btn b-muted" onClick={onBack}>← Voltar</button>
-        <div style={{flex:1}}>
-          <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:'1.35rem',color:'var(--wine-dk)'}}>
-            {event.brideNome} & {event.groomNome}
-          </h2>
-          {event.dataCas && <div style={{fontSize:'.8rem',color:'var(--text-s)'}}>{event.dataCas}{event.local?' · '+event.local:''}</div>}
-        </div>
-        <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-          <button className="btn b-muted b-sm" onClick={copyText}>📋 Copiar</button>
-          <button className="btn b-muted b-sm" onClick={()=>window.print()}>🖨️ Imprimir</button>
-          {onRegenerate && <button className="btn b-out b-sm" onClick={onRegenerate}>↻ Regenerar</button>}
-        </div>
-      </div>
-
-      {scripts.generatedAt && (
-        <div style={{fontSize:'.72rem',color:'var(--text-s)',marginBottom:10}}>
-          Gerado em {new Date(scripts.generatedAt).toLocaleString('pt-BR')}
-        </div>
-      )}
-
-      <div className="card">
-        <div className="tabs" style={{padding:'0 20px'}}>
-          {TABS.map(t=>(
-            <div key={t.id} className={`tab${tab===t.id?' act':''}`} onClick={()=>setTab(t.id)}>
-              {t.label} <span style={{fontSize:'.68rem',opacity:.6}}>— {t.sub}</span>
+        <div className="plan-grid">
+          {PLANS.map(p => (
+            <div key={p.id} className={`plan-card${chosen===p.id?" selected":""}`} onClick={() => setChosen(p.id)}>
+              {p.discount > 0 && <div className="plan-discount">-{p.discount}%</div>}
+              <div className="plan-name">{p.name}</div>
+              <div className="plan-price">R$ {p.price.toFixed(2).replace(".",",")}</div>
+              <div className="plan-events">{p.events} cronograma{p.events>1?"s":""} · {p.days} dias</div>
+              <div style={{fontSize:".72rem",color:"var(--mid)"}}>R$ {p.basePrice.toFixed(2).replace(".",",")} por cronograma{p.discount>0?` (${p.discount}% off)`:""}</div>
             </div>
           ))}
         </div>
-        <div className="cp">
-          {scripts[tab] ? (
-            <div className="sc-out" dangerouslySetInnerHTML={{__html:renderMd(scripts[tab])}}/>
-          ) : (
-            <div style={{textAlign:'center',color:'var(--text-s)',padding:'30px',fontStyle:'italic',fontFamily:"'Cormorant Garamond',serif"}}>
-              Documento não disponível. Regenere o roteiro para obtê-lo.
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
 
-// ════════════════════════════════════════════
-//  ADMIN PANEL
-// ════════════════════════════════════════════
-function AdminPanel({user, onNavigate}) {
-  const [users, setUsers]   = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [newUser, setNewUser] = useState({name:'',username:'',password:'',planId:'single',email:''});
-  const [newErr, setNewErr]   = useState('');
-  const [showForm, setShowForm] = useState(false);
-
-  useEffect(()=>{
-    db.getAllUsers().then(us=>{ setUsers(us.filter(u=>!u.isAdmin)); setLoading(false); });
-  },[]);
-
-  const revokeUser = async u => {
-    if (!window.confirm(`Revogar acesso de "${u.name}"?`)) return;
-    const up = {...u, expiresAt: new Date().toISOString()};
-    await db.saveUser(up);
-    setUsers(us=>us.map(x=>x.id===u.id?up:x));
-  };
-
-  const createUser = async () => {
-    setNewErr('');
-    if (!newUser.username||!newUser.password||!newUser.name) { setNewErr('Preencha nome, usuário e senha.'); return; }
-    const plan = PLANS.find(p=>p.id===newUser.planId)||PLANS[0];
-    const exists = await db.getUser(newUser.username.trim().toLowerCase());
-    if (exists) { setNewErr('Usuário já existe.'); return; }
-    const now = new Date();
-    const u = {
-      id:'u'+Date.now(), username:newUser.username.trim().toLowerCase(), password:newUser.password,
-      name:newUser.name, email:newUser.email, planId:plan.id, planLabel:plan.name,
-      expiresAt: new Date(now.getTime()+plan.days*24*60*60*1000).toISOString(),
-      scriptsAllowed:plan.scripts, scriptsUsed:0, isAdmin:false, createdAt:now.toISOString(),
-    };
-    await db.saveUser(u);
-    setUsers(us=>[...us,u]);
-    setNewUser({name:'',username:'',password:'',planId:'single',email:''});
-    setShowForm(false);
-  };
-
-  return (
-    <div className="wrap" style={{paddingTop:28,paddingBottom:50}}>
-      <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:20}}>
-        <button className="btn b-muted b-sm" onClick={()=>onNavigate('dashboard')}>← Dashboard</button>
-        <div className="ph" style={{marginBottom:0}}>
-          <h2>Painel Administrativo</h2>
-          <p>Gerenciar usuários e assinaturas</p>
-        </div>
-      </div>
-
-      <Al type="i">
-        💳 <strong>Integração de pagamentos:</strong> Configure sua conta no Systeme.io para receber pagamentos. Após a confirmação do pagamento, crie o acesso do usuário manualmente pelo formulário abaixo.
-      </Al>
-
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14,flexWrap:'wrap',gap:8}}>
-        <h3 style={{fontFamily:"'Playfair Display',serif",fontSize:'1.1rem',color:'var(--wine-dk)'}}>
-          Usuários Cadastrados ({users.length})
-        </h3>
-        <button className="btn b-gold b-sm" onClick={()=>setShowForm(v=>!v)}>
-          {showForm?'Cancelar':'+ Criar Usuário'}
-        </button>
-      </div>
-
-      {showForm && (
-        <div className="card cps" style={{marginBottom:16}}>
-          <h4 style={{fontFamily:"'Playfair Display',serif",color:'var(--wine-dk)',marginBottom:14}}>Novo Usuário</h4>
-          {newErr && <Al type="e">{newErr}</Al>}
-          <div className="row2">
-            <F label="Nome completo"><In value={newUser.name} onChange={v=>setNewUser(u=>({...u,name:v}))} placeholder="Nome"/></F>
-            <F label="E-mail"><In value={newUser.email} onChange={v=>setNewUser(u=>({...u,email:v}))} placeholder="email"/></F>
-          </div>
-          <div className="row2">
-            <F label="Usuário"><In value={newUser.username} onChange={v=>setNewUser(u=>({...u,username:v}))} placeholder="sem espaços"/></F>
-            <F label="Senha"><In type="password" value={newUser.password} onChange={v=>setNewUser(u=>({...u,password:v}))} placeholder="senha inicial"/></F>
-          </div>
-          <F label="Plano">
-            <select value={newUser.planId} onChange={e=>setNewUser(u=>({...u,planId:e.target.value}))}>
-              {PLANS.map(p=><option key={p.id} value={p.id}>{p.name} — {fmt(planTotal(p))} ({p.days===365?'anual':'30 dias'})</option>)}
-            </select>
-          </F>
-          <button className="btn b-gold" onClick={createUser}>Criar Acesso</button>
-        </div>
-      )}
-
-      {loading ? (
-        <div className="load-wrap"><div className="spin"/></div>
-      ) : users.length===0 ? (
-        <div className="card cps" style={{textAlign:'center',color:'var(--text-s)',fontStyle:'italic'}}>
-          Nenhum usuário além da administração.
-        </div>
-      ) : (
-        users.map(u=>{
-          const expired = u.expiresAt && new Date()>new Date(u.expiresAt);
-          return (
-            <div key={u.id} className="ev">
-              <div style={{flex:1,minWidth:0}}>
-                <div className="ev-n">
-                  {u.name} <span className="bdg bdg-g" style={{marginLeft:4}}>{u.username}</span>
-                  {' '}<span className={`bdg ${expired?'bdg-r':'bdg-gr'}`}>{expired?'Expirado':'Ativo'}</span>
-                </div>
-                <div className="ev-m">
-                  Plano: {u.planLabel} · {u.scriptsUsed}/{u.scriptsAllowed} roteiros usados
-                  {u.expiresAt && ` · Expira: ${fmtD(u.expiresAt)}`}
-                  {u.email && ` · ${u.email}`}
-                </div>
-              </div>
-              <div className="ev-a">
-                {!expired && <button className="btn b-red b-sm" onClick={()=>revokeUser(u)}>Revogar</button>}
-              </div>
-            </div>
-          );
-        })
-      )}
-    </div>
-  );
-}
-
-// ════════════════════════════════════════════
-//  QUESTIONNAIRE WIZARD — STEP COMPONENTS
-// ════════════════════════════════════════════
-function Step1({form,set}) {
-  return (
-    <>
-      <Sec title="1. Informações Básicas do Casal">
-        <div className="row2">
-          <F label="Nome completo da Noiva" req><In value={form.noivaNome} onChange={v=>set('noivaNome',v)} placeholder="Nome completo"/></F>
-          <F label="Telefone da Noiva"><In value={form.noivaTel} onChange={v=>set('noivaTel',v)} placeholder="(00) 00000-0000"/></F>
-        </div>
-        <div className="row2">
-          <F label="Nome completo do Noivo" req><In value={form.noivoNome} onChange={v=>set('noivoNome',v)} placeholder="Nome completo"/></F>
-          <F label="Telefone do Noivo"><In value={form.noivoTel} onChange={v=>set('noivoTel',v)} placeholder="(00) 00000-0000"/></F>
-        </div>
-        <div className="row2">
-          <F label="Data do casamento"><In type="date" value={form.dataCas} onChange={v=>set('dataCas',v)}/></F>
-          <F label="Horário da cerimônia"><In type="time" value={form.horario} onChange={v=>set('horario',v)}/></F>
-        </div>
-        <F label="Local da cerimônia"><In value={form.local} onChange={v=>set('local',v)} placeholder="Nome do local e endereço"/></F>
-        <F label="Local da recepção/festa" hint="Deixar em branco se for o mesmo local">
-          <In value={form.localRec} onChange={v=>set('localRec',v)} placeholder="Nome do local (se diferente da cerimônia)"/>
-        </F>
-      </Sec>
-
-      <Sec title="2. Significado da Data" sub="Opcional — enriquece a cerimônia">
-        <F label="A data tem algum significado especial?">
-          <YN value={form.dataSignif==='sim'} onChange={v=>set('dataSignif',v?'sim':'nao')} opts={[{v:true,l:'Sim'},{v:false,l:'Não'}]}/>
-        </F>
-        {form.dataSignif==='sim' && (
-          <F label="Qual o motivo da escolha desta data?">
-            <Ta value={form.dataSignifDesc} onChange={v=>set('dataSignifDesc',v)} placeholder="Aniversário de namoro, data especial da família, promessa..."/>
-          </F>
-        )}
-      </Sec>
-
-      <Sec title="3. Dados Pessoais" sub="Para personalização dos textos">
-        <div className="row2">
-          <F label="Data de nasc. da Noiva"><In type="date" value={form.noivaNasc} onChange={v=>set('noivaNasc',v)}/></F>
-          <F label="Data de nasc. do Noivo"><In type="date" value={form.noivoNasc} onChange={v=>set('noivoNasc',v)}/></F>
-        </div>
-        <div className="row2">
-          <F label="Cidade natal da Noiva"><In value={form.noivaCid} onChange={v=>set('noivaCid',v)} placeholder="Cidade — Estado"/></F>
-          <F label="Cidade natal do Noivo"><In value={form.noivoCid} onChange={v=>set('noivoCid',v)} placeholder="Cidade — Estado"/></F>
-        </div>
-        <F label="Cidade onde moram atualmente"><In value={form.cidAtual} onChange={v=>set('cidAtual',v)} placeholder="Cidade — Estado"/></F>
-      </Sec>
-    </>
-  );
-}
-
-function Step2({form,set}) {
-  return (
-    <>
-      <Sec title="4. Filhos">
-        <F label="O casal tem filhos?"><YN value={form.temFilhos} onChange={v=>set('temFilhos',v)}/></F>
-        {form.temFilhos && (
+        {!showMsg ? (
           <>
-            <F label="Nome, idade e participação na cerimônia" hint="Ex: Ana (8 anos, florista), Pedro (5 anos, pajem)">
-              <Ta value={form.filhosList} onChange={v=>set('filhosList',v)} placeholder="Liste os filhos com nome, idade e função (se participarem)"/>
-            </F>
-            <F label="Como a chegada dos filhos mudou a vida e o relacionamento de vocês?">
-              <Ta value={form.filhosHist} onChange={v=>set('filhosHist',v)} placeholder="Conte com detalhes..." rows={4}/>
-            </F>
+            <div style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"var(--rs)",padding:"12px 16px",fontSize:".83rem",color:"#166534",marginBottom:18}}>
+              💬 Ao clicar em "Solicitar via WhatsApp", você será direcionado para conversa com Silvana para confirmar o pagamento. O plano é ativado após confirmação.
+            </div>
+            <div className="modal-actions">
+              {onClose && <button className="btn btn-ghost" onClick={onClose}>Agora não</button>}
+              <button className="btn btn-green" disabled={!chosen} onClick={handleRequest}>
+                <span>📲</span> Solicitar via WhatsApp
+              </button>
+            </div>
           </>
-        )}
-      </Sec>
-
-      <Sec title="5. Família da Noiva">
-        <div className="row2">
-          <F label="Nome do pai da Noiva"><In value={form.nPaiNome} onChange={v=>set('nPaiNome',v)} placeholder="Nome completo"/></F>
-          <F label="Nome da mãe da Noiva"><In value={form.nMaeNome} onChange={v=>set('nMaeNome',v)} placeholder="Nome completo"/></F>
-        </div>
-        <F label="Observações sobre os pais da Noiva" hint="Se falecidos, separados ou outras situações relevantes">
-          <In value={form.nPaisObs} onChange={v=>set('nPaisObs',v)} placeholder="Ex: pai falecido em 2015, pais divorciados..."/>
-        </F>
-        <F label="Irmãos da Noiva" hint="Se algum for falecido, informe">
-          <In value={form.noiva_irm} onChange={v=>set('noiva_irm',v)} placeholder="Ex: Carlos, Mariana (falecida 2020)"/>
-        </F>
-      </Sec>
-
-      <Sec title="5. Família do Noivo">
-        <div className="row2">
-          <F label="Nome do pai do Noivo"><In value={form.vPaiNome} onChange={v=>set('vPaiNome',v)} placeholder="Nome completo"/></F>
-          <F label="Nome da mãe do Noivo"><In value={form.vMaeNome} onChange={v=>set('vMaeNome',v)} placeholder="Nome completo"/></F>
-        </div>
-        <F label="Observações sobre os pais do Noivo">
-          <In value={form.vPaisObs} onChange={v=>set('vPaisObs',v)} placeholder="Ex: pais recasados, pai não presente..."/>
-        </F>
-        <F label="Irmãos do Noivo">
-          <In value={form.noivo_irm} onChange={v=>set('noivo_irm',v)} placeholder="Ex: Ricardo, Beatriz"/>
-        </F>
-      </Sec>
-
-      <Sec title="6. Relação com os Pais" sub="Textos mais emocionantes quando há contexto">
-        <F label="Conte sobre a relação de vocês com seus pais" hint="O que eles representam, lembranças especiais, características admiradas">
-          <Ta value={form.relPais} onChange={v=>set('relPais',v)} placeholder="Detalhes sobre a relação com os pais dos dois lados..." rows={5}/>
-        </F>
-      </Sec>
-    </>
-  );
-}
-
-function Step3({form,set,setN}) {
-  return (
-    <>
-      <Sec title="7. Padrinhos e Madrinhas">
-        <F label="Padrinhos e madrinhas da Noiva" hint="Nome de cada um e observações">
-          <Ta value={form.padNoiva} onChange={v=>set('padNoiva',v)} placeholder="Ex: João Silva (padrinho), Maria Santos (madrinha), Carlos e Ana Lima (casal)..."/>
-        </F>
-        <F label="Padrinhos e madrinhas do Noivo">
-          <Ta value={form.padNoivo} onChange={v=>set('padNoivo',v)} placeholder="Ex: Pedro Souza (padrinho), Juliana Costa (madrinha)..."/>
-        </F>
-        <F label="Os padrinhos entrarão:">
-          <Pills value={form.padEntrada} onChange={v=>set('padEntrada',v)}
-            options={[{v:'casal',l:'Como casais'},{v:'individual',l:'Individualmente'},{v:'amigos',l:'Como amigos (sem par)'}]}/>
-        </F>
-        <F label="Posição no altar:">
-          <Pills value={form.posAltar} onChange={v=>set('posAltar',v)}
-            options={[{v:'pDireita',l:'Padrinhos à direita | Madrinhas à esquerda'},{v:'pSeparados',l:'Padrinhos/Madrinhas da noiva juntos | do noivo juntos'}]}/>
-        </F>
-      </Sec>
-
-      <Sec title="8. Crianças na Cerimônia" sub="Pajens, daminhas, floristas, plaquinhas">
-        <F label="Nome, idade e função de cada criança">
-          <Ta value={form.pajens} onChange={v=>set('pajens',v)} placeholder="Ex: Luiza (6 anos, florista), Mateus (7 anos, pajem com as alianças), Sofia (5 anos, plaquinha)..."/>
-        </F>
-      </Sec>
-    </>
-  );
-}
-
-function Step4({form,set,setN}) {
-  return (
-    <>
-      <Sec title="9. Religião e Tipo de Cerimônia">
-        <F label="O casal possui religião?"><YN value={form.temRel} onChange={v=>set('temRel',v)}/></F>
-        {form.temRel && <F label="Qual religião?"><In value={form.relNome} onChange={v=>set('relNome',v)} placeholder="Ex: Católica, Evangélica, Espírita..."/></F>}
-        <F label="A cerimônia terá caráter:">
-          <Pills value={form.tipoCer} onChange={v=>set('tipoCer',v)}
-            options={[{v:'civil',l:'Civil'},{v:'religioso',l:'Religioso'},{v:'ecumenico',l:'Ecumênico'},{v:'simbolico',l:'Simbólico'}]}/>
-        </F>
-        <div className="row2">
-          <F label="Nome do celebrante/pastor/padre"><In value={form.celebNome} onChange={v=>set('celebNome',v)} placeholder="Nome completo"/></F>
-          <F label="Telefone do celebrante"><In value={form.celebTel} onChange={v=>set('celebTel',v)} placeholder="(00) 00000-0000"/></F>
-        </div>
-      </Sec>
-
-      <Sec title="10. Votos, Bênção e Efeito de Saída">
-        <F label="O casal escreverá votos personalizados?"><YN value={form.votos} onChange={v=>set('votos',v)}/></F>
-        <F label="Haverá momento de bênção sobre o casal?">
-          <YN value={form.bencao.sim} onChange={v=>setN('bencao',{sim:v})}/>
-        </F>
-        {form.bencao.sim && (
-          <F label="A bênção será de:">
-            <Pills value={form.bencao.tipo} onChange={v=>setN('bencao',{tipo:v})}
-              options={[{v:'pais',l:'Apenas dos pais'},{v:'pf',l:'Pais e familiares'},{v:'todos',l:'Todos os convidados'}]}/>
-          </F>
-        )}
-        <F label="Efeito para a saída dos noivos:">
-          <Pills value={form.efeito} onChange={v=>set('efeito',v)}
-            options={[{v:'bolhas',l:'Bolhas de sabão'},{v:'sparkles',l:'Sparkles'},{v:'petalas',l:'Pétalas'},{v:'baloes',l:'Balões'},{v:'outro',l:'Outro'},{v:'nenhum',l:'Nenhum'}]}/>
-        </F>
-        {form.efeito==='outro' && (
-          <F label="Qual efeito?"><In value={form.efeitoOut} onChange={v=>set('efeitoOut',v)} placeholder="Descreva o efeito"/></F>
-        )}
-      </Sec>
-    </>
-  );
-}
-
-function Step5({form,set,setN}) {
-  const EntBlk = ({label,field,children,showNome=true,showQuem=false}) => {
-    const v = form[field];
-    return (
-      <div className="ent-blk">
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:v.sim?12:0}}>
-          <div className="ent-title">{label}</div>
-          <YN value={v.sim} onChange={b=>setN(field,{sim:b})}/>
-        </div>
-        {v.sim && (
-          <div style={{paddingTop:10,borderTop:'1px solid var(--border)'}}>
-            {showNome && <F label="Nome(s)"><In value={v.nome||''} onChange={b=>setN(field,{nome:b})} placeholder="Nome completo"/></F>}
-            {showQuem && <F label="Quem entrará?"><In value={v.quem||''} onChange={b=>setN(field,{quem:b})} placeholder="Nome(s) das pessoas"/></F>}
-            {children}
-            <F label="Música"><In value={v.mus||''} onChange={b=>setN(field,{mus:b})} placeholder="Título da música e artista"/></F>
+        ) : (
+          <div style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"var(--rs)",padding:"16px",textAlign:"center"}}>
+            <div style={{fontSize:"1.5rem",marginBottom:8}}>✅</div>
+            <div style={{fontWeight:600,marginBottom:4}}>Mensagem enviada!</div>
+            <div style={{fontSize:".85rem",color:"var(--mid)",marginBottom:16}}>Assim que o pagamento for confirmado, Silvana ativará seu plano.</div>
+            {onClose && <button className="btn btn-primary" onClick={onClose}>Fechar</button>}
           </div>
         )}
       </div>
-    );
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// AUTH SCREEN
+// ─────────────────────────────────────────────
+function AuthScreen({ onLogin }) {
+  const [mode, setMode] = useState("login");
+  const [form, setForm] = useState({name:"",email:"",password:"",confirm:""});
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [ok, setOk] = useState("");
+  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+
+  const handleLogin = async () => {
+    setErr(""); setLoading(true);
+    const users = await store.get("fc-users") || [];
+    const user = users.find(u => u.email===form.email && u.password===form.password);
+    if (!user) { setErr("E-mail ou senha incorretos."); setLoading(false); return; }
+    if (isExpired(user)) { setErr("Seu acesso expirou. Entre em contato com a administradora para renovar."); setLoading(false); return; }
+    await store.set("fc-session", {userId: user.id});
+    onLogin(user); setLoading(false);
   };
 
+  const handleRegister = async () => {
+    setErr("");
+    if (!form.name||!form.email||!form.password) { setErr("Preencha todos os campos."); return; }
+    if (form.password!==form.confirm) { setErr("As senhas não conferem."); return; }
+    if (form.password.length<6) { setErr("Senha deve ter ao menos 6 caracteres."); return; }
+    setLoading(true);
+    const users = await store.get("fc-users") || [];
+    if (users.find(u=>u.email===form.email)) { setErr("E-mail já cadastrado."); setLoading(false); return; }
+    const isFirst = users.length===0;
+    const createdAt = now();
+    const user = {
+      id: uid(), name: form.name, email: form.email, password: form.password, createdAt,
+      isAdmin: isFirst,
+      expiresAt: isFirst ? null : addDays(createdAt, 30),
+      plan: isFirst ? {id:"admin", events:9999, used:0, activatedAt: createdAt, expiresAt: null} : null,
+    };
+    await store.set("fc-users", [...users, user]);
+    await store.set("fc-session", {userId: user.id});
+    onLogin(user); setLoading(false);
+  };
+
+  const handleForgot = async () => {
+    setErr("");
+    if (!form.email) { setErr("Digite seu e-mail."); return; }
+    const users = await store.get("fc-users") || [];
+    const user = users.find(u=>u.email===form.email);
+    if (!user) { setErr("E-mail não encontrado."); return; }
+    setOk(`Senha: ${user.password}`);
+  };
+
+  const errBox = (msg) => msg ? <div style={{color:"#DC2626",fontSize:".85rem",marginBottom:14,padding:"10px 14px",background:"#FEF2F2",borderRadius:8}}>{msg}</div> : null;
+  const okBox  = (msg) => msg ? <div style={{color:"#166534",fontSize:".85rem",marginBottom:14,padding:"10px 14px",background:"#DCFCE7",borderRadius:8}}>{msg}</div> : null;
+
   return (
-    <Sec title="10. Entradas — 1ª Parte" sub="Marque os momentos que acontecerão na cerimônia">
-      <EntBlk label="Entrada da Bíblia" field="entBib"/>
-      <EntBlk label="Entrada do Celebrante / Pastor / Padre" field="entCel"/>
-      <EntBlk label="Entrada Especial dos Pais" field="entPais" showNome={false} showQuem>
-        <F label="Entrarão sozinhos ou acompanhados?">
-          <In value={form.entPais.acomp||''} onChange={v=>setN('entPais',{acomp:v})} placeholder="Ex: pais da noiva entram juntos, pai do noivo entra sozinho..."/>
-        </F>
-      </EntBlk>
-
-      <div className="ent-blk">
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:form.entPad.sim?12:0}}>
-          <div className="ent-title">Entrada dos Padrinhos e Madrinhas</div>
-          <YN value={form.entPad.sim} onChange={v=>setN('entPad',{sim:v})}/>
-        </div>
-        {form.entPad.sim && (
-          <div style={{paddingTop:10,borderTop:'1px solid var(--border)'}}>
-            <F label="Observações especiais"><In value={form.entPad.obs} onChange={v=>setN('entPad',{obs:v})} placeholder="Alguma observação"/></F>
-            <F label="Música"><In value={form.entPad.mus} onChange={v=>setN('entPad',{mus:v})} placeholder="Título e artista"/></F>
-          </div>
-        )}
+    <div className="auth">
+      <div className="auth-left">
+        <Logo size="lg" light />
+        <div className="auth-quote">"Cada detalhe do seu casamento merece ser vivido com emoção e planejado com perfeição."</div>
+        <div className="auth-quote-attr">— Silvana Santana</div>
       </div>
-
-      <div className="ent-blk">
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:form.entCri.sim?12:0}}>
-          <div className="ent-title">Entrada das Crianças (floristas / plaquinhas)</div>
-          <YN value={form.entCri.sim} onChange={v=>setN('entCri',{sim:v})}/>
-        </div>
-        {form.entCri.sim && (
-          <div style={{paddingTop:10,borderTop:'1px solid var(--border)'}}>
-            <F label="Nome e função de cada criança">
-              <In value={form.entCri.nomes||''} onChange={v=>setN('entCri',{nomes:v})} placeholder="Ex: Luiza (florista), Mateus (aliança)"/>
-            </F>
-            <F label="Música"><In value={form.entCri.mus||''} onChange={v=>setN('entCri',{mus:v})} placeholder="Título e artista"/></F>
-          </div>
-        )}
-      </div>
-    </Sec>
-  );
-}
-
-function Step6({form,set,setN}) {
-  return (
-    <>
-      <Sec title="10. Entradas — 2ª Parte" sub="Entradas principais">
-        <div style={{fontFamily:"'Playfair Display',serif",fontWeight:600,fontSize:'.95rem',color:'var(--wine-dk)',marginBottom:10}}>Entrada do Noivo</div>
-        <div className="ent-blk">
-          <F label="Quem conduzirá o Noivo ao altar?" req>
-            <In value={form.entNoivo.cond} onChange={v=>setN('entNoivo',{cond:v})} placeholder="Nome e relação com o noivo"/>
-          </F>
-          <F label="O que essa pessoa representa para o Noivo?">
-            <Ta value={form.entNoivo.sig} onChange={v=>setN('entNoivo',{sig:v})} placeholder="Conte brevemente a história e a importância..."/>
-          </F>
-          <F label="Música" req><In value={form.entNoivo.mus} onChange={v=>setN('entNoivo',{mus:v})} placeholder="Título e artista"/></F>
-        </div>
-
-        <div style={{fontFamily:"'Playfair Display',serif",fontWeight:600,fontSize:'.95rem',color:'var(--wine-dk)',margin:'18px 0 10px'}}>Entrada da Noiva</div>
-        <div className="ent-blk">
-          <F label="Quem conduzirá a Noiva ao altar?" req>
-            <In value={form.entNoiva.cond} onChange={v=>setN('entNoiva',{cond:v})} placeholder="Nome e relação com a noiva"/>
-          </F>
-          <F label="O que essa pessoa representa para a Noiva?">
-            <Ta value={form.entNoiva.sig} onChange={v=>setN('entNoiva',{sig:v})} placeholder="Conte brevemente..."/>
-          </F>
-          <F label="Música" req><In value={form.entNoiva.mus} onChange={v=>setN('entNoiva',{mus:v})} placeholder="Título e artista"/></F>
-        </div>
-
-        <div className="ent-blk">
-          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:form.entAli.sim?12:0}}>
-            <div className="ent-title">Entrada das Alianças</div>
-            <YN value={form.entAli.sim} onChange={v=>setN('entAli',{sim:v})}/>
-          </div>
-          {form.entAli.sim && (
-            <div style={{paddingTop:10,borderTop:'1px solid var(--border)'}}>
-              <F label="Quem levará as alianças?"><In value={form.entAli.quem} onChange={v=>setN('entAli',{quem:v})} placeholder="Nome e idade se criança"/></F>
-              <F label="Música"><In value={form.entAli.mus} onChange={v=>setN('entAli',{mus:v})} placeholder="Título e artista"/></F>
+      <div className="auth-right">
+        <div className="auth-form">
+          {mode==="login" && <>
+            <div className="auth-title">Bem-vinda de volta</div>
+            <div className="auth-sub">Acesse sua conta para gerenciar seus casamentos</div>
+            {errBox(err)}
+            <div className="field"><label>E-mail</label><input type="email" value={form.email} onChange={e=>set("email",e.target.value)} placeholder="seu@email.com"/></div>
+            <div className="field"><label>Senha</label><input type="password" value={form.password} onChange={e=>set("password",e.target.value)} placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&handleLogin()}/></div>
+            <button className="btn btn-primary btn-full" onClick={handleLogin} disabled={loading}>{loading?"Entrando…":"Entrar"}</button>
+            <div style={{textAlign:"center",marginTop:20,fontSize:".85rem",color:"var(--mid)"}}>
+              <span className="fc-link" onClick={()=>{setMode("forgot");setErr("");}}>Esqueci minha senha</span>
+              {" · "}
+              <span className="fc-link" onClick={()=>{setMode("register");setErr("");}}>Criar conta</span>
             </div>
-          )}
+            <hr className="div" style={{marginTop:28}}/>
+            <div style={{textAlign:"center"}}>
+              <div style={{fontSize:".75rem",color:"var(--mid)",marginBottom:10}}>Problemas para entrar? Limpe os dados e crie uma nova conta.</div>
+              <button className="btn btn-danger btn-sm" onClick={async()=>{
+                if (!window.confirm("Isso apagará TODAS as contas e casamentos salvos. Continuar?")) return;
+                const keys = await store.list("fc-");
+                for (const k of keys) await store.del(k);
+                await store.del("fc-session");
+                await store.del("fc-users");
+                setErr(""); setOk(""); setForm({name:"",email:"",password:"",confirm:""});
+                alert("Dados apagados. Agora crie uma nova conta.");
+              }}>🗑 Limpar todos os dados</button>
+            </div>
+          </>}
+          {mode==="register" && <>
+            <div className="auth-title">Criar conta</div>
+            <div className="auth-sub">Comece a organizar seus casamentos agora</div>
+            {errBox(err)}
+            <div className="field"><label>Nome completo</label><input value={form.name} onChange={e=>set("name",e.target.value)} placeholder="Seu nome"/></div>
+            <div className="field"><label>E-mail</label><input type="email" value={form.email} onChange={e=>set("email",e.target.value)} placeholder="seu@email.com"/></div>
+            <div className="field"><label>Senha</label><input type="password" value={form.password} onChange={e=>set("password",e.target.value)} placeholder="Mínimo 6 caracteres"/></div>
+            <div className="field"><label>Confirmar senha</label><input type="password" value={form.confirm} onChange={e=>set("confirm",e.target.value)} placeholder="Repita a senha"/></div>
+            <button className="btn btn-primary btn-full" onClick={handleRegister} disabled={loading}>{loading?"Criando…":"Criar conta"}</button>
+            <div style={{textAlign:"center",marginTop:18,fontSize:".85rem"}}>
+              <span className="fc-link" onClick={()=>{setMode("login");setErr("");}}>Já tenho conta</span>
+            </div>
+          </>}
+          {mode==="forgot" && <>
+            <div className="auth-title">Recuperar senha</div>
+            <div className="auth-sub">Informe o e-mail cadastrado</div>
+            {errBox(err)}{okBox(ok)}
+            <div className="field"><label>E-mail</label><input type="email" value={form.email} onChange={e=>set("email",e.target.value)} placeholder="seu@email.com"/></div>
+            <button className="btn btn-primary btn-full" onClick={handleForgot}>Recuperar</button>
+            <div style={{textAlign:"center",marginTop:18,fontSize:".85rem"}}>
+              <span className="fc-link" onClick={()=>{setMode("login");setErr("");setOk("");}}>Voltar ao login</span>
+            </div>
+          </>}
         </div>
-      </Sec>
-
-      <Sec title="Músicas Adicionais" sub="Outros momentos musicais da cerimônia">
-        <F label="Louvor / Música pós-pregação"><In value={form.musLouv} onChange={v=>set('musLouv',v)} placeholder="Título e artista"/></F>
-        <F label="Música para fotos protocolares"><In value={form.musFotos} onChange={v=>set('musFotos',v)} placeholder="Título e artista"/></F>
-        <F label="Música de saída do casal"><In value={form.musSaida} onChange={v=>set('musSaida',v)} placeholder="Título e artista"/></F>
-      </Sec>
-    </>
+      </div>
+    </div>
   );
 }
 
-function Step7({form,set}) {
+// ─────────────────────────────────────────────
+// USAGE WIDGET
+// ─────────────────────────────────────────────
+function UsageWidget({ user }) {
+  if (user.isAdmin) return <span className="exp-admin">👑 Admin Vitalício</span>;
+  const p = user.plan;
+  if (!p) return (
+    <span style={{fontSize:".8rem",color:"#DC2626",background:"#FEE2E2",padding:"3px 10px",borderRadius:"50px",fontWeight:600}}>
+      Sem plano ativo
+    </span>
+  );
+  const used = p.used || 0, total = p.events;
+  const pct = Math.min((used/total)*100, 100);
+  const cls = pct>=100?"full":pct>=75?"warn":"ok";
+  const d = daysLeft(p.expiresAt);
   return (
-    <>
-      <Sec title="11. História do Casal" sub="Quanto mais detalhes, mais personalizada será a cerimônia">
-        <F label="Quando e onde se conheceram?" hint="Mês, ano e local — seja específico">
-          <Ta value={form.comoConhec} onChange={v=>set('comoConhec',v)} placeholder="Ex: Em março de 2019, numa festa de aniversário de um amigo em comum em Sorriso-MT. Ela estava com um grupo de amigas quando ele chegou..."/>
-        </F>
-        <F label="Quem os apresentou ou como aconteceu o primeiro encontro?">
-          <Ta value={form.quemApresen} onChange={v=>set('quemApresen',v)} placeholder="Conte a história com detalhes — o que cada um pensou, o que foi dito..." rows={4}/>
-        </F>
-        <F label="Qual foi a primeira impressão que tiveram um do outro?">
-          <Ta value={form.primImpres} onChange={v=>set('primImpres',v)} placeholder="A impressão inicial de cada um ao ver e conhecer o outro..."/>
-        </F>
-        <F label="Quando e como aconteceu o pedido de namoro?">
-          <Ta value={form.pedNam} onChange={v=>set('pedNam',v)} placeholder="A história do pedido de namoro com detalhes..." rows={4}/>
-        </F>
-        <F label="Quando e como aconteceu o pedido de casamento?">
-          <Ta value={form.pedCas} onChange={v=>set('pedCas',v)} placeholder="A história do pedido de casamento com detalhes..." rows={4}/>
-        </F>
-      </Sec>
-
-      <Sec title="12. Momentos Marcantes">
-        <F label="Qual foi o momento mais difícil que já enfrentaram juntos?">
-          <Ta value={form.momDif} onChange={v=>set('momDif',v)} placeholder="Descreva o momento com honestidade..."/>
-        </F>
-        <F label="Como superaram esse momento?">
-          <Ta value={form.comoSuper} onChange={v=>set('comoSuper',v)} placeholder="O que cada um fez, o que isso revelou sobre vocês dois..."/>
-        </F>
-        <F label="Qual foi o momento mais feliz ou mais marcante da história de vocês?">
-          <Ta value={form.momFeliz} onChange={v=>set('momFeliz',v)} placeholder="O momento que melhor representa quem vocês são juntos..."/>
-        </F>
-      </Sec>
-    </>
+    <div style={{minWidth:180}}>
+      <div style={{display:"flex",justifyContent:"space-between",fontSize:".75rem",color:"var(--mid)",marginBottom:3}}>
+        <span>📋 Cronogramas: <strong style={{color:"var(--dark)"}}>{used}/{total}</strong></span>
+        {p.expiresAt && <span style={{color:d<=7?"#DC2626":"var(--mid)"}}>{d>0?`${d}d`:"Exp."}</span>}
+      </div>
+      <div className="usage-bar-wrap"><div className={`usage-bar ${cls}`} style={{width:`${pct}%`}}/></div>
+    </div>
   );
 }
 
-function Step8({form,set}) {
+// ─────────────────────────────────────────────
+// ADMIN PANEL
+// ─────────────────────────────────────────────
+function AdminPanel({ currentUser }) {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [editPlan, setEditPlan] = useState(null); // {userId, planId, events}
+  const [confirmDel, setConfirmDel] = useState(null);
+
+  const load = async () => { setLoading(true); setUsers(await store.get("fc-users")||[]); setLoading(false); };
+  useEffect(() => { load(); }, []);
+
+  const save = async (updated) => { await store.set("fc-users", updated); setUsers(updated); };
+
+  const activatePlan = async (userId, planId, customEvents) => {
+    const plan = PLANS.find(p=>p.id===planId);
+    if (!plan) return;
+    const events = customEvents || plan.events;
+    const activatedAt = now();
+    const expiresAt = addDays(activatedAt, plan.days);
+    const updated = users.map(u => u.id!==userId ? u : {
+      ...u,
+      expiresAt,
+      plan: {id: planId, events, used: u.plan?.used||0, activatedAt, expiresAt}
+    });
+    await save(updated); setEditPlan(null);
+  };
+
+  const setLifetime = async (id) => {
+    const updated = users.map(u => u.id!==id ? u : {
+      ...u, isAdmin: true, expiresAt: null,
+      plan: {id:"admin", events:9999, used: u.plan?.used||0, activatedAt: now(), expiresAt: null}
+    });
+    await save(updated);
+  };
+
+  const revoke = async (id) => {
+    const updated = users.map(u => u.id!==id ? u : {...u, expiresAt: addDays(now(),-1), plan: null});
+    await save(updated);
+  };
+
+  const deleteUser = async (id) => { await save(users.filter(u=>u.id!==id)); setConfirmDel(null); };
+
+  const expLabel = (u) => {
+    if (u.isAdmin && !u.expiresAt) return <span className="exp-admin">👑 Admin Vitalício</span>;
+    const d = daysLeft(u.expiresAt);
+    if (d<=0) return <span className="exp-expired">Expirado</span>;
+    if (d<=7) return <span className="exp-warn">⚠ {d}d</span>;
+    return <span className="exp-ok">✓ {d}d</span>;
+  };
+
+  if (loading) return <div style={{padding:40,textAlign:"center"}}><div className="spinner" style={{margin:"0 auto"}}/></div>;
+
   return (
-    <>
-      <Sec title="13. Sobre Cada Um">
-        <F label='Noivo — 3 qualidades que admira na Noiva'>
-          <Ta value={form.vSobreN} onChange={v=>set('vSobreN',v)} placeholder="Ex: a determinação dela diante dos obstáculos; o jeito como acolhe as pessoas; a coragem de recomeçar quando necessário..."/>
-        </F>
-        <F label='Noiva — 3 qualidades que admira no Noivo'>
-          <Ta value={form.nSobreV} onChange={v=>set('nSobreV',v)} placeholder="Ex: a paciência que ele tem; o comprometimento com o trabalho e com a família; a forma como me escuta..."/>
-        </F>
-      </Sec>
+    <div>
+      <div style={{background:"#FEF9EC",border:"1px solid rgba(201,168,106,.3)",borderRadius:"var(--rs)",padding:"14px 18px",marginBottom:24,fontSize:".85rem",color:"var(--gold-d)"}}>
+        💡 <strong>Integração de pagamento:</strong> Configure seus produtos no <strong>systeme.io</strong> para cada plano e compartilhe os links de checkout com seus clientes. Após confirmação do pagamento, ative o plano manualmente aqui. Em breve: ativação automática via webhook.
+      </div>
 
-      <Sec title="14. Frases para a Cerimônia">
-        <F label='Noivo — "Minha vida mudou quando você..."'>
-          <Ta value={form.vFrase} onChange={v=>set('vFrase',v)} placeholder="Complete do ponto de vista do noivo — um momento concreto, uma ação específica dela..."/>
-        </F>
-        <F label='Noiva — "Minha vida mudou quando você..."'>
-          <Ta value={form.nFrase} onChange={v=>set('nFrase',v)} placeholder="Complete do ponto de vista da noiva — um momento concreto, uma ação específica dele..."/>
-        </F>
-      </Sec>
+      <div className="page-hdr" style={{marginBottom:20}}>
+        <div>
+          <div className="page-title" style={{fontSize:"1.5rem"}}>Gestão de Usuários</div>
+          <div className="page-sub">{users.length} conta{users.length!==1?"s":""} cadastrada{users.length!==1?"s":""}</div>
+        </div>
+      </div>
 
-      <Sec title="15 — 17. Homenagens e Observações">
-        <F label="Gostariam de homenagear alguém especial?"><YN value={form.homen} onChange={v=>set('homen',v)}/></F>
-        {form.homen && (
-          <F label="Quem? (nome e relação)">
-            <Ta value={form.homenQuem} onChange={v=>set('homenQuem',v)} placeholder="Nome, relação e por que essa pessoa foi importante na história de vocês..."/>
-          </F>
-        )}
-        {form.temFilhos && (
-          <F label="Os filhos participarão de algum momento especial?">
-            <Ta value={form.filhosPartic} onChange={v=>set('filhosPartic',v)} placeholder="Descreva como os filhos farão parte da cerimônia..."/>
-          </F>
-        )}
-        <F label="Existe algum assunto que NÃO deve ser mencionado?" hint="Histórias, pessoas ou situações sensíveis">
-          <In value={form.naoMenc} onChange={v=>set('naoMenc',v)} placeholder="Deixar em branco se não houver"/>
-        </F>
-      </Sec>
+      <div style={{overflowX:"auto"}}>
+        <table className="users-table">
+          <thead><tr>
+            <th>Usuário</th><th>E-mail</th><th>Cadastro</th>
+            <th>Plano</th><th>Uso</th><th>Validade</th><th>Status</th><th>Ações</th>
+          </tr></thead>
+          <tbody>
+            {users.map(u => {
+              const used = u.plan?.used||0, total = u.plan?.events||0;
+              return (
+                <tr key={u.id}>
+                  <td>
+                    <div style={{display:"flex",alignItems:"center",gap:9}}>
+                      <div className="user-av" style={{width:28,height:28,fontSize:".75rem"}}>{u.name[0].toUpperCase()}</div>
+                      <div>
+                        <div style={{fontWeight:600,fontSize:".85rem"}}>{u.name}</div>
+                        {u.isAdmin && <div style={{fontSize:".68rem",color:"var(--gold-d)"}}>Admin</div>}
+                      </div>
+                    </div>
+                  </td>
+                  <td style={{color:"var(--mid)",fontSize:".8rem"}}>{u.email}</td>
+                  <td style={{color:"var(--mid)",fontSize:".8rem"}}>{new Date(u.createdAt).toLocaleDateString("pt-BR")}</td>
+                  <td style={{fontSize:".8rem"}}>{u.plan ? (u.plan.id==="admin"?"Vitalício":PLANS.find(p=>p.id===u.plan.id)?.name||u.plan.id) : <span style={{color:"#DC2626"}}>Sem plano</span>}</td>
+                  <td>
+                    {u.plan && !u.isAdmin ? (
+                      <div style={{minWidth:90}}>
+                        <div style={{fontSize:".75rem",color:"var(--mid)",marginBottom:3}}>{used}/{total}</div>
+                        <div className="usage-bar-wrap" style={{width:80}}><div className={`usage-bar ${used>=total?"full":used/total>=.75?"warn":"ok"}`} style={{width:`${Math.min((used/total)*100,100)}%`}}/></div>
+                      </div>
+                    ) : <span style={{fontSize:".78rem",color:"var(--mid)"}}>—</span>}
+                  </td>
+                  <td style={{fontSize:".8rem"}}>{u.plan?.expiresAt ? new Date(u.plan.expiresAt).toLocaleDateString("pt-BR") : (u.isAdmin?"Vitalício":"—")}</td>
+                  <td>{expLabel(u)}</td>
+                  <td>
+                    {u.id===currentUser.id ? <span style={{fontSize:".73rem",color:"var(--mid)"}}>Sua conta</span> : (
+                      <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                        <button className="icon-btn sage btn-sm" onClick={()=>setEditPlan({userId:u.id, name:u.name})} title="Ativar plano">📋 Plano</button>
+                        <button className="icon-btn gold btn-sm" onClick={()=>setLifetime(u.id)} title="Tornar admin vitalício">👑</button>
+                        <button className="icon-btn btn-sm" style={{color:"#D97706"}} onClick={()=>revoke(u.id)} title="Revogar">🚫</button>
+                        <button className="icon-btn danger btn-sm" onClick={()=>setConfirmDel(u)} title="Excluir">🗑</button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
 
-      <Sec title="18. Mensagem Final">
-        <F label="Que sentimento ou valor vocês querem que a cerimônia transmita?" hint="Orienta o tom geral de toda a cerimônia">
-          <Ta value={form.msgFinal} onChange={v=>set('msgFinal',v)} placeholder="Ex: emoção contida e profunda; leveza e alegria; fé e gratidão; superação; a força de uma história construída com trabalho..." rows={4}/>
-        </F>
-        <Al type="i">
-          ✨ Tudo preenchido? Clique em <strong>Gerar Roteiro</strong> para criar os três documentos personalizados com base na história de vocês.
-        </Al>
-      </Sec>
-    </>
+      {editPlan && (
+        <div className="overlay" onClick={()=>setEditPlan(null)}>
+          <div className="modal" onClick={e=>e.stopPropagation()}>
+            <div className="modal-title">Ativar Plano</div>
+            <div className="modal-sub">Ativando plano para <strong>{editPlan.name}</strong></div>
+            <div className="plan-grid" style={{gridTemplateColumns:"1fr 1fr"}}>
+              {PLANS.map(p => (
+                <div key={p.id} className={`plan-card${editPlan.planId===p.id?" selected":""}`} onClick={()=>setEditPlan(ep=>({...ep,planId:p.id}))}>
+                  {p.discount>0&&<div className="plan-discount">-{p.discount}%</div>}
+                  <div className="plan-name">{p.name}</div>
+                  <div className="plan-price">R$ {p.price.toFixed(2).replace(".",",")}</div>
+                  <div className="plan-events">{p.events} cronograma{p.events>1?"s":""} · {p.days}d</div>
+                </div>
+              ))}
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn-secondary" onClick={()=>setEditPlan(null)}>Cancelar</button>
+              <button className="btn btn-primary" disabled={!editPlan.planId} onClick={()=>activatePlan(editPlan.userId, editPlan.planId)}>✓ Ativar Plano</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmDel && (
+        <div className="overlay" onClick={()=>setConfirmDel(null)}>
+          <div className="modal" onClick={e=>e.stopPropagation()}>
+            <div className="modal-title">Excluir conta?</div>
+            <div className="modal-sub">Excluir a conta de <strong>{confirmDel.name}</strong>? Ação irreversível.</div>
+            <div className="modal-actions">
+              <button className="btn btn-secondary" onClick={()=>setConfirmDel(null)}>Cancelar</button>
+              <button className="btn btn-danger" onClick={()=>deleteUser(confirmDel.id)}>Excluir</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
-// ════════════════════════════════════════════
-//  QUESTIONNAIRE WIZARD
-// ════════════════════════════════════════════
-function QuestionnaireWizard({user, existingEvent, onDone, onCancel}) {
-  const [step, setStep]     = useState(1);
-  const [form, setForm]     = useState(existingEvent?.form ? {...INIT_FORM,...existingEvent.form} : {...INIT_FORM});
-  const [generating, setGen] = useState(false);
-  const [error, setError]   = useState('');
-  const [savedMsg, setSaved] = useState('');
-  const total = WIZ.length;
+// ─────────────────────────────────────────────
+// WEDDING FORM
+// ─────────────────────────────────────────────
+const SECTIONS = ["Informações Básicas","Detalhes da Recepção","Família e Padrinhos","Sobre a Festa","Fornecedores","Alimentação","Horários","Bolo de Casamento","Buquê da Noiva","Brinde","Balada","Credenciamento","Crianças","Mesa Posta","Lembrancinhas","Momentos Especiais","Observações Gerais"];
 
-  const evRef = useRef(existingEvent || {
-    id: 'ev'+Date.now(), userId: user.id,
-    brideNome:'', groomNome:'', dataCas:'', local:'',
-    scripts:null, createdAt: new Date().toISOString(),
+const emptyWedding = () => ({
+  id:uid(), createdAt:now(), updatedAt:now(), status:"draft",
+  brideName:"",groomName:"",ceremonyDate:"",ceremonyTime:"",guestCount:"",
+  receptionVenue:"",
+  coupleChildren:"",brideParents:"",brideSiblings:"",brideGrandparents:"",
+  groomParents:"",groomSiblings:"",groomGrandparents:"",
+  brideBridesmaids:"",groomGroomsmen:"",flowergirls:"",ringbearers:"",
+  partyFeatures:[],partyFeaturesOther:"",
+  suppliers:[],
+  foodOptions:[],foodOther:"",
+  appetizersTime:"",breakfastTime:"",lunchTime:"",afternoonTeaTime:"",dinnerTime:"",dessertTime:"",brothTime:"",
+  cakeOptions:[],cakeOther:"",
+  bouquetOptions:[],
+  toastParticipants:[],
+  danceOptions:[],
+  accreditationOptions:[],
+  childrenOptions:[],
+  tableOptions:[],
+  favorOptions:[],
+  specialBouquetToss:false,specialTieToss:false,specialDressChange:false,
+  generalNotes:"",
+});
+
+function MultiCheck({options,value,onChange}) {
+  const toggle=(opt)=>onChange(value.includes(opt)?value.filter(v=>v!==opt):[...value,opt]);
+  return (
+    <div className="chk-grid">
+      {options.map(opt=>(
+        <label key={opt} className={`chk-item${value.includes(opt)?" on":""}`}>
+          <input type="checkbox" checked={value.includes(opt)} onChange={()=>toggle(opt)}/>{opt}
+        </label>
+      ))}
+    </div>
+  );
+}
+
+// SupplierCard — estado local para evitar "pulo" ao digitar
+// propaga para o pai apenas no onBlur (saída do campo)
+function SupplierCard({ supplier, index, onUpdate, onDelete }) {
+  const [local, setLocal] = useState(supplier);
+  const cats=["DJ","Banda","Buffet","Decoração","Foto","Filmagem","Celebrante","Sonorização","Drinks","Segurança","Espaço","Doces","Bolo","Chopp","Lembrancinhas","Plataforma 360°","Cabine de fotos","Outros"];
+  const set = (k,v) => setLocal(l => ({...l,[k]:v}));
+  const flush = () => onUpdate(local);
+  // select propaga imediatamente (não causa pulo)
+  const setAndFlush = (k,v) => { const upd = {...local,[k]:v}; setLocal(upd); onUpdate(upd); };
+  return (
+    <div className="supp-card">
+      <div className="supp-hdr">
+        <div className="supp-label">Fornecedor {index+1}{local.category?` — ${local.category}`:""}</div>
+        <button className="btn btn-danger btn-sm" onClick={onDelete}>Remover</button>
+      </div>
+      <div className="g3">
+        <div className="field"><label>Categoria</label>
+          <select value={local.category} onChange={e=>setAndFlush("category",e.target.value)}>
+            <option value="">Selecione…</option>{cats.map(c=><option key={c}>{c}</option>)}
+          </select>
+        </div>
+        <div className="field"><label>Nome</label><input value={local.name} onChange={e=>set("name",e.target.value)} onBlur={flush}/></div>
+        <div className="field"><label>Empresa</label><input value={local.company} onChange={e=>set("company",e.target.value)} onBlur={flush}/></div>
+        <div className="field"><label>Responsável</label><input value={local.responsible} onChange={e=>set("responsible",e.target.value)} onBlur={flush}/></div>
+        <div className="field"><label>Telefone (WhatsApp)</label><input value={local.phone} onChange={e=>set("phone",e.target.value)} onBlur={flush} placeholder="66 9 9999-9999"/></div>
+        <div className="field"><label>E-mail</label><input type="email" value={local.email} onChange={e=>set("email",e.target.value)} onBlur={flush}/></div>
+        <div className="field"><label>Chegada prevista</label><input type="time" value={local.arrivalTime} onChange={e=>setAndFlush("arrivalTime",e.target.value)}/></div>
+        <div className="field"><label>Saída prevista</label><input type="time" value={local.departureTime} onChange={e=>setAndFlush("departureTime",e.target.value)}/></div>
+      </div>
+      <div className="field"><label>Observações</label><textarea value={local.notes} onChange={e=>set("notes",e.target.value)} onBlur={flush} rows={2}/></div>
+    </div>
+  );
+}
+
+function SupplierManager({suppliers,onChange}) {
+  const add=()=>onChange([...suppliers,{id:uid(),name:"",category:"",company:"",responsible:"",phone:"",email:"",arrivalTime:"",departureTime:"",notes:""}]);
+  const upd=(id,updated)=>onChange(suppliers.map(s=>s.id===id?updated:s));
+  const del=(id)=>onChange(suppliers.filter(s=>s.id!==id));
+  return (
+    <div>
+      {suppliers.map((s,i)=>(
+        <SupplierCard key={s.id} supplier={s} index={i}
+          onUpdate={updated=>upd(s.id,updated)}
+          onDelete={()=>del(s.id)}
+        />
+      ))}
+      <button className="btn btn-secondary" onClick={add}>＋ Adicionar Fornecedor</button>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// IMPORT MODAL — extrai dados de PDF ou DOCX via IA
+// ─────────────────────────────────────────────
+const EXTRACTION_PROMPT = `Analise este formulário de casamento e extraia TODOS os dados preenchidos. Retorne APENAS um objeto JSON válido com esta estrutura exata (sem markdown, sem texto adicional):
+
+{
+  "brideName": "",
+  "groomName": "",
+  "ceremonyDate": "YYYY-MM-DD",
+  "ceremonyTime": "HH:MM",
+  "guestCount": "",
+  "receptionVenue": "",
+  "coupleChildren": "",
+  "brideParents": "",
+  "brideSiblings": "",
+  "brideGrandparents": "",
+  "groomParents": "",
+  "groomSiblings": "",
+  "groomGrandparents": "",
+  "brideBridesmaids": "",
+  "groomGroomsmen": "",
+  "flowergirls": "",
+  "ringbearers": "",
+  "partyFeatures": [],
+  "foodOptions": [],
+  "appetizersTime": "",
+  "lunchTime": "",
+  "dinnerTime": "",
+  "dessertTime": "",
+  "brothTime": "",
+  "cakeOptions": [],
+  "bouquetOptions": [],
+  "toastParticipants": [],
+  "danceOptions": [],
+  "accreditationOptions": [],
+  "childrenOptions": [],
+  "tableOptions": [],
+  "favorOptions": [],
+  "specialBouquetToss": false,
+  "specialTieToss": false,
+  "specialDressChange": false,
+  "suppliers": [],
+  "generalNotes": ""
+}
+
+REGRAS DE MAPEAMENTO:
+- ceremonyDate: converta para YYYY-MM-DD (ex: 11/04/2026 → 2026-04-11)
+- ceremonyTime: formato HH:MM (ex: 10h00 → 10:00)
+- partyFeatures: use exatamente estes valores quando marcados: "Entrada especial do casal","Brinde ao casal","Valsa do casal no início da festa","Valsa para abrir a balada","Coreografia no início da festa","Coreografia para abrir a balada","Skypaper","Papel picado","Bolhas de sabão","Velas Sparkle","Acessórios de pista","Bolo servido na mesa","Lembrancinhas","Slide de fotos","Vídeo Love Story","Vídeo para redes sociais","Vídeo de felicitações dos convidados","Brincadeira da gravata","Brincadeira do buquê","Senha e QR Code da internet","Reserva de mesas"
+- foodOptions: "Entrada","Café da manhã","Almoço","Café da tarde","Jantar","Sobremesa","Caldo"
+- cakeOptions: "Será servido na mesa","Será lembrancinha","Bolo verdadeiro","Bolo cenográfico","Não terá bolo"
+- bouquetOptions: "Apenas um buquê","Cerimonialista levará ao salão","Decoradora entregará","Outra pessoa levará","Jogarei o mesmo buquê","Jogarei outro buquê","Darei de presente","Não jogarei buquê"
+- toastParticipants: "Casal","Pais","Padrinhos","Filhos","Avós","Irmãos","Cunhados"
+- danceOptions: "Terá balada","Não terá balada","Coreografia do casal","Coreografia coletiva","Sem abertura oficial"
+- accreditationOptions: "Lista","Convite","Número exato","Lista + Convite","QR Code"
+- childrenOptions: "Terá monitores","Não terá monitores","Espaço kids","Não terá espaço kids","Não haverá crianças"
+- favorOptions: "Uma por pessoa","Uma por família","Apenas adultos","Lembrancinhas diferentes para crianças","Distribuição após refeição","Distribuição durante a balada"
+- tableOptions: "Menores de 3 anos no colo","Serviço para convidados acima de 3 anos","Mesa para 6 lugares","Mesa para 8 lugares","Mesa para 10 lugares","Mesa para 20 lugares"
+- suppliers: para cada fornecedor listado, crie {id:"",name:"nome",category:"categoria",company:"empresa",responsible:"responsável",phone:"telefone",email:"",arrivalTime:"",departureTime:"",notes:"observações"}. Categorias: DJ,Banda,Buffet,Decoração,Foto,Filmagem,Celebrante,Sonorização,Drinks,Segurança,Espaço,Doces,Bolo,Chopp,Lembrancinhas,Plataforma 360°,Cabine de fotos,Outros
+- specialBouquetToss: true se brincadeira do buquê marcada como Sim
+- specialTieToss: true se brincadeira da gravata marcada como Sim
+- specialDressChange: true se troca de vestido marcada como Sim
+- generalNotes: inclua observações, detalhes operacionais, informações sobre convidados especiais, observações sobre família, etc.
+- Campos não preenchidos: string vazia "" ou array vazio []`;
+
+function ImportModal({ onImport, onClose, showToast }) {
+  const [file, setFile] = useState(null);
+  const [processing, setProcessing] = useState(false);
+  const [step, setStep] = useState('');
+  const fileRef = useRef();
+
+  const toBase64 = (f) => new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(f);
   });
 
-  const set  = useCallback((k,v) => setForm(f=>({...f,[k]:v})), []);
-  const setN = useCallback((parent, updates) => setForm(f=>({...f,[parent]:{...f[parent],...updates}})), []);
+  const loadMammoth = () => new Promise((res, rej) => {
+    if (window.mammoth) { res(window.mammoth); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js';
+    s.onload = () => res(window.mammoth);
+    s.onerror = rej;
+    document.head.appendChild(s);
+  });
 
-  const saveDraft = async () => {
-    const ev = {
-      ...evRef.current,
-      brideNome: form.noivaNome, groomNome: form.noivoNome,
-      dataCas: form.dataCas, local: form.local,
-      form, updatedAt: new Date().toISOString(),
-    };
-    evRef.current = ev;
-    await db.saveEvent(ev);
-    setSaved('Rascunho salvo!');
-    setTimeout(()=>setSaved(''),2200);
-  };
-
-  const handleGenerate = async () => {
-    setError(''); setGen(true);
+  const processFile = async () => {
+    if (!file) return;
+    setProcessing(true);
     try {
-      const prompt = buildPrompt(form);
-      const text   = await callClaude(prompt);
-      const scripts = parseScripts(text);
-      const ev = {
-        ...evRef.current,
-        brideNome: form.noivaNome, groomNome: form.noivoNome,
-        dataCas: form.dataCas, local: form.local,
-        form, scripts, updatedAt: new Date().toISOString(),
-      };
-      evRef.current = ev;
-      await db.saveEvent(ev);
-      // Increment counter only for new generation (not re-gen of same event)
-      const isNewScript = !existingEvent?.scripts;
-      const updUser = isNewScript ? {...user, scriptsUsed: user.scriptsUsed+1} : user;
-      if (isNewScript) await db.saveUser(updUser);
-      onDone(ev, updUser);
-    } catch(e) {
-      setError('Erro ao gerar roteiro: '+e.message+'. Verifique sua conexão e tente novamente.');
+      let messages;
+      const isPDF = file.name.toLowerCase().endsWith('.pdf');
+      const isDOCX = file.name.toLowerCase().endsWith('.docx');
+
+      if (isPDF) {
+        setStep('Lendo PDF…');
+        const b64 = await toBase64(file);
+        messages = [{ role: 'user', content: [
+          { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: b64 } },
+          { type: 'text', text: EXTRACTION_PROMPT }
+        ]}];
+      } else if (isDOCX) {
+        setStep('Convertendo DOCX…');
+        const mammoth = await loadMammoth();
+        const buf = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer: buf });
+        messages = [{ role: 'user', content: `${EXTRACTION_PROMPT}\n\nCONTEÚDO DO FORMULÁRIO:\n${result.value}` }];
+      } else {
+        showToast('Use arquivos PDF ou DOCX.', 'error');
+        setProcessing(false); return;
+      }
+
+      setStep('Extraindo dados com IA…');
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 4000,
+          system: 'Você extrai dados de formulários de casamento. Retorne APENAS JSON válido, sem markdown, sem texto adicional.',
+          messages
+        })
+      });
+      const apiData = await res.json();
+      const text = apiData.content?.map(c => c.text || '').join('') || '{}';
+      const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+
+      // Add UIDs to suppliers
+      if (parsed.suppliers) parsed.suppliers = parsed.suppliers.map(s => ({ ...s, id: uid() }));
+
+      setStep('Preenchendo formulário…');
+      onImport(parsed);
+      showToast('✓ Formulário importado! Revise os dados preenchidos.', 'success');
+      onClose();
+    } catch (e) {
+      console.error(e);
+      showToast('Erro ao processar. Verifique o arquivo e tente novamente.', 'error');
     }
-    setGen(false);
+    setProcessing(false);
   };
 
   return (
-    <div className="wrap" style={{paddingTop:22,paddingBottom:50}}>
-      {/* Header */}
-      <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:14,flexWrap:'wrap'}}>
-        <button className="btn b-muted b-sm" onClick={onCancel}>← Sair</button>
-        <div>
-          <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:'1.25rem',color:'var(--wine-dk)'}}>
-            Questionário da Cerimônia
-          </h2>
-          <div style={{fontSize:'.78rem',color:'var(--text-s)'}}>
-            Passo {step} de {total}: <strong>{WIZ[step-1]?.title}</strong>
-          </div>
+    <div className="overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-title">📂 Importar Formulário</div>
+        <div className="modal-sub">Envie o formulário preenchido (PDF ou DOCX) e a IA preencherá o cadastro automaticamente.</div>
+
+        <div style={{ background: 'var(--light)', border: '2px dashed var(--gray)', borderRadius: 'var(--rs)', padding: 32, textAlign: 'center', cursor: 'pointer', marginBottom: 20, transition: 'var(--tr)' }}
+          onClick={() => fileRef.current?.click()}
+          onDragOver={e => e.preventDefault()}
+          onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) setFile(f); }}>
+          <input ref={fileRef} type="file" accept=".pdf,.docx" style={{ display: 'none' }} onChange={e => setFile(e.target.files[0])} />
+          {file ? (
+            <div>
+              <div style={{ fontSize: '2rem', marginBottom: 8 }}>{file.name.endsWith('.pdf') ? '📄' : '📝'}</div>
+              <div style={{ fontWeight: 600, color: 'var(--dark)', marginBottom: 4 }}>{file.name}</div>
+              <div style={{ fontSize: '.78rem', color: 'var(--mid)' }}>{(file.size / 1024).toFixed(0)} KB · Clique para trocar</div>
+            </div>
+          ) : (
+            <div>
+              <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>📁</div>
+              <div style={{ fontWeight: 600, color: 'var(--dark)', marginBottom: 4 }}>Clique ou arraste o arquivo aqui</div>
+              <div style={{ fontSize: '.82rem', color: 'var(--mid)' }}>Aceita PDF e DOCX</div>
+            </div>
+          )}
         </div>
-        {savedMsg && <div style={{marginLeft:'auto',fontSize:'.8rem',color:'#4a7c59',fontStyle:'italic'}}>{savedMsg}</div>}
-      </div>
 
-      {/* Step indicator */}
-      <div className="wz-steps">
-        {WIZ.map((s,i) => (
-          <React.Fragment key={s.id}>
-            <div className={`wz-s${step===s.id?' act':step>s.id?' done':''}`} onClick={()=>setStep(s.id)}>
-              <div className={`wz-dot ${step>s.id?'dot-d':step===s.id?'dot-a':'dot-p'}`}>
-                {step>s.id ? '✓' : s.icon}
-              </div>
-              <div className={`wz-lbl${step===s.id?' act':''}`}>{s.lbl}</div>
-            </div>
-            {i < WIZ.length-1 && <div className={`wz-con${step>s.id?' done':''}`}/>}
-          </React.Fragment>
-        ))}
-      </div>
-
-      {error && <Al type="e">{error}</Al>}
-
-      {generating ? (
-        <div className="load-wrap">
-          <div className="spin"/>
-          <div className="load-t">
-            Gerando seu roteiro personalizado com base na história de {form.noivaNome||'Noiva'} & {form.noivoNome||'Noivo'}...
-            <br/>Isso pode levar até 30 segundos.
-          </div>
+        <div style={{ background: 'rgba(170,184,161,.1)', border: '1px solid var(--sage-l)', borderRadius: 'var(--rs)', padding: '10px 14px', fontSize: '.8rem', color: 'var(--mid)', marginBottom: 20 }}>
+          💡 Funciona com o <strong>Formulário Master (.docx)</strong> e o <strong>Questionário Google Forms (.pdf)</strong>. Após importar, revise e ajuste os campos antes de salvar.
         </div>
-      ) : (
-        <>
-          {step===1 && <Step1 form={form} set={set}/>}
-          {step===2 && <Step2 form={form} set={set}/>}
-          {step===3 && <Step3 form={form} set={set} setN={setN}/>}
-          {step===4 && <Step4 form={form} set={set} setN={setN}/>}
-          {step===5 && <Step5 form={form} set={set} setN={setN}/>}
-          {step===6 && <Step6 form={form} set={set} setN={setN}/>}
-          {step===7 && <Step7 form={form} set={set}/>}
-          {step===8 && <Step8 form={form} set={set}/>}
 
-          {/* Navigation */}
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:22,gap:8,flexWrap:'wrap',borderTop:'1px solid var(--border)',paddingTop:18}}>
-            <div style={{display:'flex',gap:6}}>
-              {step>1 && (
-                <button className="btn b-out b-sm" onClick={()=>setStep(s=>Math.max(s-1,1))}>← Anterior</button>
-              )}
-              <button className="btn b-muted b-sm" onClick={saveDraft}>Salvar Rascunho</button>
-            </div>
-            <div style={{display:'flex',gap:6}}>
-              {step<total && (
-                <button className="btn b-wine" onClick={()=>setStep(s=>Math.min(s+1,total))}>Próximo →</button>
-              )}
-              {step===total && (
-                <button className="btn b-gold b-lg" onClick={handleGenerate}>✨ Gerar Roteiro</button>
-              )}
-            </div>
+        {processing && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: 'var(--beige)', borderRadius: 'var(--rs)', marginBottom: 16 }}>
+            <div className="spinner" style={{ width: 20, height: 20, borderWidth: 2 }} />
+            <div style={{ fontSize: '.85rem', color: 'var(--dark)' }}>{step}</div>
           </div>
-        </>
-      )}
+        )}
+
+        <div className="modal-actions">
+          <button className="btn btn-secondary" onClick={onClose} disabled={processing}>Cancelar</button>
+          <button className="btn btn-primary" onClick={processFile} disabled={!file || processing}>
+            {processing ? 'Processando…' : '✨ Importar e Preencher'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
 
-// ════════════════════════════════════════════
-//  MAIN APP
-// ════════════════════════════════════════════
-export default function App() {
-  const [view, setView]           = useState('landing');
-  const [user, setUser]           = useState(null);
-  const [viewEvent, setViewEvent] = useState(null);
-  const [editEvent, setEditEvent] = useState(null);
-  const [defaultPlan, setDPlan]   = useState(null);
-  const [ready, setReady]         = useState(false);
+function WeddingForm({wedding, prefilled, userId,onSave,onCancel,showToast}) {
+  const [data,setData]=useState(()=>{
+    const base = {...emptyWedding(),...wedding,userId};
+    if (prefilled) {
+      const clean = Object.fromEntries(Object.entries(prefilled).filter(([,v])=>v!==''&&v!==null&&v!==undefined&&!(Array.isArray(v)&&v.length===0)));
+      return {...base,...clean};
+    }
+    return base;
+  });
+  const [active,setActive]=useState(0);
+  const [saving,setSaving]=useState(false);
+  const [showImport, setShowImport]=useState(false);
+  const secRefs=useRef([]);
+  const saveTimer=useRef(null);
+  const upd=(k,v)=>setData(d=>({...d,[k]:v,updatedAt:now()}));
+
+  const handleImport = (imported) => {
+    setData(d => ({
+      ...d,
+      ...Object.fromEntries(Object.entries(imported).filter(([,v]) => v !== '' && v !== null && v !== undefined && !(Array.isArray(v) && v.length === 0))),
+      updatedAt: now()
+    }));
+    // Scroll to top of form
+    secRefs.current[0]?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   useEffect(()=>{
-    // Inject CSS
-    if (!document.getElementById('wc-css')) {
-      const el = document.createElement('style');
-      el.id = 'wc-css';
-      el.textContent = CSS;
-      document.head.appendChild(el);
-    }
-    db.init().then(()=>setReady(true));
-  },[]);
+    clearTimeout(saveTimer.current); setSaving(true);
+    saveTimer.current=setTimeout(async()=>{
+      await store.set(`fc-wedding-${userId}-${data.id}`,data); setSaving(false);
+    },1200);
+    return()=>clearTimeout(saveTimer.current);
+  },[data]);
 
-  const login    = u => { setUser(u); setView('dashboard'); };
-  const logout   = () => { setUser(null); setView('landing'); setViewEvent(null); setEditEvent(null); };
-  const navigate = (v,data) => {
-    if (v==='register') { setDPlan(data||null); setView('auth'); return; }
-    if (v==='login')    { setView('auth'); return; }
-    setView(v);
+  const scrollTo=(i)=>{ setActive(i); secRefs.current[i]?.scrollIntoView({behavior:"smooth"}); };
+
+  const handleSave=async()=>{
+    const updated={...data,status:"done",updatedAt:now()};
+    await store.set(`fc-wedding-${userId}-${data.id}`,updated);
+    onSave(updated); showToast("Casamento salvo com sucesso!","success");
   };
 
-  const handleQDone = (ev, updUser) => {
-    setUser(updUser);
-    setViewEvent(ev);
-    setView('scripts');
-  };
+  const partyOpts=["Entrada especial do casal","Brinde ao casal","Valsa do casal no início da festa","Valsa para abrir a balada","Coreografia no início da festa","Coreografia para abrir a balada","Skypaper","Papel picado","Bolhas de sabão","Velas Sparkle","Acessórios de pista","Bolo servido na mesa","Lembrancinhas","Slide de fotos","Vídeo Love Story","Vídeo para redes sociais","Vídeo de felicitações dos convidados","Brincadeira da gravata","Brincadeira do buquê","Outras brincadeiras","Senha e QR Code da internet","Reserva de mesas","Outro"];
 
-  if (!ready) return (
-    <div className="load-wrap" style={{minHeight:'100vh',display:'flex'}}>
-      <div className="spin"/>
-      <div className="load-t">A carregar...</div>
+  const Sec=({i,icon,children})=>(
+    <div className="fsec" ref={el=>secRefs.current[i]=el}>
+      <div className="fsec-title">{icon} {SECTIONS[i]}</div>
+      <div className="fsec-bar"/>
+      {children}
     </div>
   );
 
   return (
     <div>
-      {user && (
-        <Nav user={user} onLogout={logout} onNavigate={navigate}/>
-      )}
-
-      {view==='landing' && (
-        <LandingPage onGo={navigate}/>
-      )}
-
-      {view==='auth' && (
-        <AuthPage onLogin={login} onGo={navigate} defaultPlan={defaultPlan}/>
-      )}
-
-      {view==='dashboard' && user && (
-        <Dashboard
-          user={user}
-          onNavigate={navigate}
-          onNewEvent={()=>{ setEditEvent(null); setView('questionnaire'); }}
-          onViewEvent={ev=>{ setViewEvent(ev); setView('scripts'); }}
-          onEditEvent={ev=>{ setEditEvent(ev); setView('questionnaire'); }}
-        />
-      )}
-
-      {view==='questionnaire' && user && (
-        <QuestionnaireWizard
-          user={user}
-          existingEvent={editEvent}
-          onDone={handleQDone}
-          onCancel={()=>setView('dashboard')}
-        />
-      )}
-
-      {view==='scripts' && viewEvent && (
-        <ScriptViewer
-          event={viewEvent}
-          onBack={()=>setView('dashboard')}
-          onRegenerate={viewEvent.form ? ()=>{ setEditEvent(viewEvent); setView('questionnaire'); } : null}
-        />
-      )}
-
-      {view==='admin' && user?.isAdmin && (
-        <AdminPanel user={user} onNavigate={navigate}/>
-      )}
+      <div className="hdr">
+        <Logo/>
+        <div className="hdr-right">
+          <div className="autosave"><div className={`as-dot${saving?" saving":""}`}/>{saving?"Salvando…":"Salvo"}</div>
+          <button className="btn btn-ghost" onClick={onCancel}>← Voltar</button>
+          <button className="btn btn-secondary btn-sm" onClick={()=>setShowImport(true)} title="Importar formulário PDF ou DOCX">📂 Importar</button>
+          <button className="btn btn-primary" onClick={handleSave}>Salvar Casamento</button>
+        </div>
+      </div>
+      <div className="form-layout">
+        <div className="form-sidebar">
+          <div className="fsb-title">Seções do Formulário</div>
+          {SECTIONS.map((s,i)=>(
+            <div key={i} className={`fsb-item${active===i?" active":""}`} onClick={()=>scrollTo(i)}>
+              <span className="fsb-num">{i+1}</span>{s}
+            </div>
+          ))}
+          <hr className="div"/>
+          <button className="btn btn-primary btn-full" onClick={handleSave}>Salvar</button>
+        </div>
+        <div className="form-main">
+          <Sec i={0} icon="💍">
+            <div className="g2">
+              <div className="field"><label>Nome da Noiva</label><input value={data.brideName} onChange={e=>upd("brideName",e.target.value)} placeholder="Nome completo da noiva"/></div>
+              <div className="field"><label>Nome do Noivo</label><input value={data.groomName} onChange={e=>upd("groomName",e.target.value)} placeholder="Nome completo do noivo"/></div>
+              <div className="field"><label>Data da Cerimônia</label><input type="date" value={data.ceremonyDate} onChange={e=>upd("ceremonyDate",e.target.value)}/></div>
+              <div className="field"><label>Horário da Cerimônia</label><input type="time" value={data.ceremonyTime} onChange={e=>upd("ceremonyTime",e.target.value)}/></div>
+            </div>
+            <div className="field" style={{maxWidth:200}}><label>Número de Convidados</label><input type="number" value={data.guestCount} onChange={e=>upd("guestCount",e.target.value)} placeholder="0"/></div>
+          </Sec>
+          <Sec i={1} icon="🏛">
+            <div className="field"><label>Local da Recepção</label><input value={data.receptionVenue} onChange={e=>upd("receptionVenue",e.target.value)} placeholder="Nome e endereço do local"/></div>
+          </Sec>
+          <Sec i={2} icon="👨‍👩‍👧">
+            <div className="g2">
+              {[["coupleChildren","Filhos do casal"],["brideParents","Pais da noiva"],["brideSiblings","Irmãos da noiva"],["brideGrandparents","Avós da noiva"],["groomParents","Pais do noivo"],["groomSiblings","Irmãos do noivo"],["groomGrandparents","Avós do noivo"],["brideBridesmaids","Padrinhos da noiva"],["groomGroomsmen","Padrinhos do noivo"],["flowergirls","Daminhas"],["ringbearers","Pajens"]].map(([k,l])=>(
+                <div key={k} className="field"><label>{l}</label><textarea value={data[k]} onChange={e=>upd(k,e.target.value)} rows={2} placeholder="Nomes separados por vírgula"/></div>
+              ))}
+            </div>
+          </Sec>
+          <Sec i={3} icon="🎉">
+            <MultiCheck options={partyOpts} value={data.partyFeatures} onChange={v=>upd("partyFeatures",v)}/>
+            {data.partyFeatures.includes("Outro")&&<div className="field" style={{marginTop:12}}><label>Descreva o "Outro"</label><textarea value={data.partyFeaturesOther} onChange={e=>upd("partyFeaturesOther",e.target.value)} rows={2}/></div>}
+          </Sec>
+          <Sec i={4} icon="🤝">
+            <SupplierManager suppliers={data.suppliers} onChange={v=>upd("suppliers",v)}/>
+          </Sec>
+          <Sec i={5} icon="🍽">
+            <MultiCheck options={["Entrada","Café da manhã","Almoço","Café da tarde","Jantar","Sobremesa","Caldo","Outro"]} value={data.foodOptions} onChange={v=>upd("foodOptions",v)}/>
+            {data.foodOptions.includes("Outro")&&<div className="field" style={{marginTop:12}}><label>Especifique</label><input value={data.foodOther} onChange={e=>upd("foodOther",e.target.value)}/></div>}
+          </Sec>
+          <Sec i={6} icon="⏰">
+            <div className="g3">
+              {[["appetizersTime","Entradinhas"],["breakfastTime","Café da manhã"],["lunchTime","Almoço"],["afternoonTeaTime","Café da tarde"],["dinnerTime","Jantar"],["dessertTime","Sobremesa"],["brothTime","Caldo"]].map(([k,l])=>(
+                <div key={k} className="field"><label>{l}</label><input type="time" value={data[k]} onChange={e=>upd(k,e.target.value)}/></div>
+              ))}
+            </div>
+          </Sec>
+          <Sec i={7} icon="🎂">
+            <MultiCheck options={["Será servido na mesa","Será lembrancinha","Bolo verdadeiro","Bolo cenográfico","Não terá bolo","Outro"]} value={data.cakeOptions} onChange={v=>upd("cakeOptions",v)}/>
+            {data.cakeOptions.includes("Outro")&&<div className="field" style={{marginTop:12}}><label>Especifique</label><input value={data.cakeOther} onChange={e=>upd("cakeOther",e.target.value)}/></div>}
+          </Sec>
+          <Sec i={8} icon="💐">
+            <MultiCheck options={["Apenas um buquê","Cerimonialista levará ao salão","Decoradora entregará","Outra pessoa levará","Jogarei o mesmo buquê","Jogarei outro buquê","Darei de presente","Não jogarei buquê"]} value={data.bouquetOptions} onChange={v=>upd("bouquetOptions",v)}/>
+          </Sec>
+          <Sec i={9} icon="🥂">
+            <MultiCheck options={["Casal","Pais","Padrinhos","Filhos","Avós","Irmãos","Cunhados"]} value={data.toastParticipants} onChange={v=>upd("toastParticipants",v)}/>
+          </Sec>
+          <Sec i={10} icon="💃">
+            <MultiCheck options={["Terá balada","Não terá balada","Coreografia do casal","Coreografia coletiva","Sem abertura oficial"]} value={data.danceOptions} onChange={v=>upd("danceOptions",v)}/>
+          </Sec>
+          <Sec i={11} icon="🎫">
+            <MultiCheck options={["Lista","Convite","Número exato","Lista + Convite","QR Code"]} value={data.accreditationOptions} onChange={v=>upd("accreditationOptions",v)}/>
+          </Sec>
+          <Sec i={12} icon="👶">
+            <MultiCheck options={["Terá monitores","Não terá monitores","Espaço kids","Não terá espaço kids","Não haverá crianças"]} value={data.childrenOptions} onChange={v=>upd("childrenOptions",v)}/>
+          </Sec>
+          <Sec i={13} icon="🍽">
+            <MultiCheck options={["Menores de 3 anos no colo","Serviço para convidados acima de 3 anos","Mesa para 6 lugares","Mesa para 8 lugares","Mesa para 10 lugares","Mesa para 20 lugares"]} value={data.tableOptions} onChange={v=>upd("tableOptions",v)}/>
+          </Sec>
+          <Sec i={14} icon="🎁">
+            <MultiCheck options={["Uma por pessoa","Uma por família","Apenas adultos","Lembrancinhas diferentes para crianças","Distribuição após refeição","Distribuição durante a balada"]} value={data.favorOptions} onChange={v=>upd("favorOptions",v)}/>
+          </Sec>
+          <Sec i={15} icon="✨">
+            <div className="chk-grid">
+              {[["specialBouquetToss","Brincadeira do buquê"],["specialTieToss","Brincadeira da gravata"],["specialDressChange","Troca de vestido da noiva"]].map(([k,l])=>(
+                <label key={k} className={`chk-item${data[k]?" on":""}`}>
+                  <input type="checkbox" checked={data[k]} onChange={e=>upd(k,e.target.checked)}/>{l}
+                </label>
+              ))}
+            </div>
+          </Sec>
+          <Sec i={16} icon="📝">
+            <div className="field"><label>Observações</label><textarea value={data.generalNotes} onChange={e=>upd("generalNotes",e.target.value)} rows={8} style={{minHeight:160}} placeholder="Detalhes adicionais, pedidos especiais…"/></div>
+          </Sec>
+          <div style={{display:"flex",gap:12,justifyContent:"flex-end",paddingBottom:40}}>
+            <button className="btn btn-secondary" onClick={onCancel}>Cancelar</button>
+            <button className="btn btn-primary" onClick={handleSave}>Salvar Casamento</button>
+          </div>
+        </div>
+      </div>
+      <div className="footer">Desenvolvido por Silvana Santana – Cerimonial Sorriso</div>
+      {showImport && <ImportModal onImport={handleImport} onClose={()=>setShowImport(false)} showToast={showToast}/>}
     </div>
+  );
+}
+// ─────────────────────────────────────────────
+function WhatsAppSender({ wedding, scheduleItems, onClose }) {
+  const [sel, setSel] = useState({});
+  const [preview, setPreview] = useState(null); // {supplier, msg}
+
+  const suppliers = wedding.suppliers || [];
+
+  const toggleSel = (id) => setSel(s => ({...s, [id]: !s[id]}));
+  const selectedList = suppliers.filter(s => sel[s.id]);
+
+  const nextDay = (dateStr) => {
+    if (!dateStr) return "dia seguinte";
+    const d = new Date(dateStr + "T12:00:00");
+    d.setDate(d.getDate() + 1);
+    return d.toLocaleDateString("pt-BR", {weekday:"long", day:"2-digit", month:"2-digit"});
+  };
+
+  const buildMessage = (supplier) => {
+    const relevant = filterItemsForCategory(scheduleItems, supplier.category);
+    const schedText = relevant.length > 0
+      ? relevant.map(i => `${i.time} – ${i.activity}${i.observations ? ` (${i.observations})` : ""}`).join("\n")
+      : "Consultar cronograma completo com a cerimonialista.";
+
+    const dateStr = fmtDate(wedding.ceremonyDate);
+    const venue = wedding.receptionVenue || "local do evento";
+    const noiva = wedding.brideName || "Noiva";
+    const noivo = wedding.groomName || "Noivo";
+
+    return `Bom dia! Tudo bem? 😊
+
+Meu nome é *Silvana*, sou a cerimonialista responsável pelo casamento de *${noiva}* e *${noivo}*, que acontecerá no dia *${dateStr}*, com recepção no *${venue}*.
+
+📍 *Horário de chegada/montagem:* ➡️ A partir das *${supplier.arrivalTime || "– a confirmar"}* do dia ${dateStr}
+📍 *Horário de saída/desmontagem:* ➡️ Até *${supplier.departureTime || "– a confirmar"}* de ${nextDay(wedding.ceremonyDate)}
+
+*Seus horários no cronograma:*
+${schedText}
+
+Peço, por gentileza, atenção rigorosa aos horários para evitar multa ao casal.
+
+Fico à disposição para qualquer dúvida. Obrigada! 🌸
+*— Silvana Santana · Cerimonialista*`;
+  };
+
+  const openWa = (supplier) => {
+    const msg = buildMessage(supplier);
+    const phone = (supplier.phone || "").replace(/\D/g, "");
+    const url = phone
+      ? `https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`
+      : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    window.open(url, "_blank");
+  };
+
+  const openWaAll = () => {
+    selectedList.forEach((s, i) => {
+      setTimeout(() => openWa(s), i * 600);
+    });
+  };
+
+  return (
+    <div className="overlay" onClick={onClose}>
+      <div className="modal modal-lg" onClick={e => e.stopPropagation()}>
+        <div className="modal-title">📲 Enviar via WhatsApp</div>
+        <div className="modal-sub">Selecione os fornecedores. Cada um recebe apenas os horários relevantes para sua categoria.</div>
+
+        {suppliers.length === 0 ? (
+          <div style={{textAlign:"center",padding:"32px",color:"var(--mid)"}}>
+            Nenhum fornecedor cadastrado neste casamento.<br/>
+            <span style={{fontSize:".82rem"}}>Adicione fornecedores no formulário para usar este recurso.</span>
+          </div>
+        ) : (
+          <>
+            <div className="wa-supp-grid">
+              {suppliers.map(s => {
+                const relevant = filterItemsForCategory(scheduleItems, s.category);
+                return (
+                  <div key={s.id} className={`wa-supp-item${sel[s.id]?" sel":""}`} onClick={()=>toggleSel(s.id)}>
+                    <input type="checkbox" checked={!!sel[s.id]} onChange={()=>toggleSel(s.id)} onClick={e=>e.stopPropagation()}/>
+                    <div>
+                      <div style={{fontWeight:600,fontSize:".85rem"}}>{s.name||s.company||s.category}</div>
+                      <div style={{fontSize:".73rem",color:"var(--mid)"}}>{s.category}{s.phone?` · ${s.phone}`:""}</div>
+                      <div style={{fontSize:".7rem",color:"var(--sage-d)"}}>{relevant.length} item{relevant.length!==1?"s":""} no cronograma</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {selectedList.length > 0 && (
+              <div style={{marginBottom:16}}>
+                <div style={{fontSize:".78rem",fontWeight:600,color:"var(--mid)",marginBottom:8,textTransform:"uppercase",letterSpacing:".07em"}}>
+                  Prévia da mensagem — {selectedList[0].name||selectedList[0].category}
+                </div>
+                <div className="wa-preview">{buildMessage(selectedList[0])}</div>
+                {selectedList.length > 1 && (
+                  <div style={{fontSize:".75rem",color:"var(--mid)",marginTop:6}}>
+                    + {selectedList.length-1} outro{selectedList.length-1>1?"s":""} fornecedor{selectedList.length-1>1?"es":""} com mensagens individualizadas
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="modal-actions">
+              <button className="btn btn-secondary" onClick={onClose}>Fechar</button>
+              {selectedList.length > 0 && (
+                <button className="btn btn-green" onClick={openWaAll}>
+                  📲 Enviar para {selectedList.length} fornecedor{selectedList.length>1?"es":""}
+                </button>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// SCHEDULE EDITOR
+// ─────────────────────────────────────────────
+function buildPrompt(w) {
+  const yn=v=>v?"Sim":"Não", arr=a=>Array.isArray(a)&&a.length?a.join(", "):"Não informado";
+  return `Você é um coordenador profissional de casamentos brasileiro especialista em cronogramas operacionais.
+Gere um cronograma operacional COMPLETO e DETALHADO para o casamento abaixo.
+
+DADOS:
+- Noivos: ${w.brideName||"Noiva"} e ${w.groomName||"Noivo"}
+- Data: ${fmtDate(w.ceremonyDate)} | Cerimônia: ${w.ceremonyTime||"18:00"}
+- Convidados: ${w.guestCount||"100"} | Local: ${w.receptionVenue||"A informar"}
+ALIMENTAÇÃO: ${arr(w.foodOptions)}
+Horário Jantar: ${w.dinnerTime||"—"} | Entradinhas: ${w.appetizersTime||"—"} | Caldo: ${w.brothTime||"—"}
+ATRAÇÕES: ${arr(w.partyFeatures)}
+BOLO: ${arr(w.cakeOptions)} | BUQUÊ: ${arr(w.bouquetOptions)}
+BRINDE com: ${arr(w.toastParticipants)} | BALADA: ${arr(w.danceOptions)}
+MOMENTOS: Buquê:${yn(w.specialBouquetToss)} Gravata:${yn(w.specialTieToss)} Troca vestido:${yn(w.specialDressChange)}
+FORNECEDORES: ${w.suppliers?.length?w.suppliers.map(s=>`${s.category}:${s.name||s.company}(${s.arrivalTime||"?"}→${s.departureTime||"?"})`).join(", "):"N/A"}
+OBS: ${w.generalNotes||"Nenhuma"}
+
+RETORNE APENAS um array JSON válido, sem markdown. Cada item: {"time":"HH:MM","activity":"...","responsible":"...","observations":"..."}
+Mínimo 22 itens. Inicie com chegada dos fornecedores. Encerre com desmontagem. Todos os textos em Português Brasileiro.`;
+}
+
+function ScheduleEditor({ wedding, userId, onBack, showToast }) {
+  const [items, setItems] = useState([]);
+  const [generating, setGenerating] = useState(false);
+  const [generated, setGenerated] = useState(false);
+  const [dragIdx, setDragIdx] = useState(null);
+  const [dragOver, setDragOver] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [newRow, setNewRow] = useState({time:"",activity:"",responsible:"",observations:""});
+  const [showWa, setShowWa] = useState(false);
+  const [showDocxModal, setShowDocxModal] = useState(false);
+  const [printPreview, setPrintPreview] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState(null);
+  const saveTimer = useRef(null);
+  const schedKey = `fc-schedule-${userId}-${wedding.id}`;
+
+  useEffect(() => {
+    store.get(schedKey).then(saved => { if (saved?.length) { setItems(saved); setGenerated(true); } });
+  }, []);
+
+  useEffect(() => {
+    if (!generated) return;
+    clearTimeout(saveTimer.current); setSaving(true);
+    saveTimer.current = setTimeout(async () => { await store.set(schedKey, items); setSaving(false); }, 1000);
+  }, [items, generated]);
+
+  const generate = async () => {
+    setGenerating(true);
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          model:"claude-sonnet-4-20250514", max_tokens:4000,
+          system:"Especialista em coordenação de casamentos. Retorne apenas JSON válido, sem markdown.",
+          messages:[{role:"user",content:buildPrompt(wedding)}]
+        })
+      });
+      const data = await res.json();
+      const text = data.content?.map(c=>c.text||"").join("")||"[]";
+      const parsed = JSON.parse(text.replace(/```json|```/g,"").trim());
+      const withIds = parsed.map(i=>({...i,id:uid()}));
+      setItems(withIds); setGenerated(true);
+      await store.set(schedKey, withIds);
+
+      // Increment usage counter
+      const users = await store.get("fc-users")||[];
+      const updated = users.map(u => {
+        if (u.id!==userId || !u.plan) return u;
+        return {...u, plan:{...u.plan, used:(u.plan.used||0)+1}};
+      });
+      await store.set("fc-users", updated);
+
+      showToast("Cronograma gerado com sucesso!","success");
+    } catch(e) {
+      console.error(e);
+      showToast("Erro ao gerar. Tente novamente.","error");
+    }
+    setGenerating(false);
+  };
+
+  const updItem=(id,k,v)=>setItems(its=>its.map(i=>i.id===id?{...i,[k]:v}:i));
+  const delItem=(id)=>setItems(its=>its.filter(i=>i.id!==id));
+
+  const addRow=()=>{
+    if (!newRow.time||!newRow.activity) return;
+    const merged=[...items,{...newRow,id:uid()}].sort((a,b)=>{
+      if(!a.time) return 1; if(!b.time) return -1; return a.time.localeCompare(b.time);
+    });
+    setItems(merged); setNewRow({time:"",activity:"",responsible:"",observations:""});
+  };
+
+  const onDragStart=(e,i)=>{setDragIdx(i);e.dataTransfer.effectAllowed="move";};
+  const onDragOver=(e,i)=>{e.preventDefault();setDragOver(i);};
+  const onDrop=(e,i)=>{
+    e.preventDefault();
+    if(dragIdx===null||dragIdx===i){setDragIdx(null);setDragOver(null);return;}
+    const its=[...items];const[moved]=its.splice(dragIdx,1);its.splice(i,0,moved);
+    setItems(its);setDragIdx(null);setDragOver(null);
+  };
+
+  // ── Builds the styled HTML table used by both exports ──
+  const buildExportRows = (stripHtml = false) =>
+    items.map((it, idx) => {
+      const bg = idx % 2 === 0 ? "#ffffff" : "#f7f5f2";
+      return `<tr style="background:${bg}">
+        <td style="padding:9px 13px;border:1px solid #d4cfc8;font-weight:bold;white-space:nowrap;color:#2A2A28;vertical-align:top">${it.time}</td>
+        <td style="padding:9px 13px;border:1px solid #d4cfc8;vertical-align:top">${it.activity}</td>
+        <td style="padding:9px 13px;border:1px solid #d4cfc8;vertical-align:top;color:#555">${it.responsible || ""}</td>
+        <td style="padding:9px 13px;border:1px solid #d4cfc8;vertical-align:top;color:#666;font-style:italic">${it.observations || ""}</td>
+      </tr>`;
+    }).join("");
+
+  const buildExportHeader = () => `
+    <div style="text-align:center;margin-bottom:22px;padding-bottom:16px;border-bottom:3px solid #AAB8A1">
+      <img src="${LOGO_SRC}" alt="Logo" style="height:60px;width:auto;margin-bottom:10px;display:block;margin-left:auto;margin-right:auto"/>
+      <h1 style="margin:0 0 4px;font-size:22pt;color:#A8874E;font-family:Georgia,serif;letter-spacing:1px">FESTA DE CASAMENTO</h1>
+      <p style="margin:0 0 14px;color:#7A8F73;font-style:italic;font-size:11pt">Silvana Santana – Cerimonial Sorriso</p>
+      <table style="margin:0 auto;font-size:10pt;color:#555;border-collapse:separate;border-spacing:0 2px">
+        <tr>
+          <td style="padding:2px 14px;border-right:1px solid #ccc"><strong>💑 ${wedding.brideName} e ${wedding.groomName}</strong></td>
+          <td style="padding:2px 14px;border-right:1px solid #ccc">📅 ${fmtDate(wedding.ceremonyDate)}</td>
+          ${wedding.receptionVenue ? `<td style="padding:2px 14px;border-right:1px solid #ccc">📍 ${wedding.receptionVenue}</td>` : ""}
+          ${wedding.guestCount ? `<td style="padding:2px 14px">👥 ${wedding.guestCount} convidados</td>` : ""}
+        </tr>
+      </table>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:10.5pt;font-family:Arial,sans-serif">
+      <thead>
+        <tr style="background:#AAB8A1;color:white">
+          <th style="padding:10px 13px;border:1px solid #8fa88a;text-align:left;font-weight:bold;width:80px">Horário</th>
+          <th style="padding:10px 13px;border:1px solid #8fa88a;text-align:left;font-weight:bold">Atividade</th>
+          <th style="padding:10px 13px;border:1px solid #8fa88a;text-align:left;font-weight:bold;width:150px">Responsável</th>
+          <th style="padding:10px 13px;border:1px solid #8fa88a;text-align:left;font-weight:bold;width:200px">Observações</th>
+        </tr>
+      </thead>
+      <tbody>${buildExportRows()}</tbody>
+    </table>
+    <p style="text-align:center;margin-top:20px;font-size:8.5pt;color:#aaa;font-style:italic">
+      Desenvolvido por Silvana Santana – Cerimonial Sorriso
+    </p>`;
+
+  // ── DOCX: copia HTML rico via execCommand — Word interpreta e preserva a formatação ──
+  const exportDocx = () => {
+    const temp = document.createElement("div");
+    temp.style.cssText = "position:fixed;top:0;left:-9999px;width:900px;background:white;font-family:Arial,sans-serif;font-size:11pt;z-index:-1;";
+    temp.innerHTML = buildExportHeader();
+    document.body.appendChild(temp);
+
+    // Seleciona o conteúdo renderizado (não HTML puro — copia como rich text)
+    const range = document.createRange();
+    range.selectNodeContents(temp);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+
+    const ok = document.execCommand("copy");
+    sel.removeAllRanges();
+    document.body.removeChild(temp);
+
+    if (ok) {
+      showToast("✓ Copiado com formatação! Abra o Word e pressione Ctrl+V", "success");
+    } else {
+      setShowDocxModal(true);
+    }
+  };
+
+  // ── PDF: carrega jsPDF do CDN e gera PDF real como data URL ──
+  const exportPDF = async () => {
+    setPrintPreview(true); // mostra preview imediatamente
+    try {
+      // Carrega jsPDF dinamicamente se não estiver disponível
+      if (!window.jspdf) {
+        await new Promise((res,rej)=>{
+          const s=document.createElement("script");
+          s.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+          s.onload=res; s.onerror=rej; document.head.appendChild(s);
+        });
+      }
+      if (!window.jspdf?.jsPDF?.prototype?.autoTable) {
+        await new Promise((res,rej)=>{
+          const s=document.createElement("script");
+          s.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js";
+          s.onload=res; s.onerror=rej; document.head.appendChild(s);
+        });
+      }
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation:"portrait", unit:"mm", format:"a4" });
+      const pw = doc.internal.pageSize.getWidth();
+
+      // Logo (embedded base64)
+      try { doc.addImage(LOGO_SRC,"PNG",14,8,38,18); } catch(e){}
+
+      // Título
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(18);
+      doc.setTextColor(168,135,78);
+      doc.text("FESTA DE CASAMENTO", pw/2, 16, {align:"center"});
+
+      doc.setFont("helvetica","italic");
+      doc.setFontSize(10);
+      doc.setTextColor(122,143,115);
+      doc.text("Silvana Santana – Cerimonial Sorriso", pw/2, 22, {align:"center"});
+
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(9);
+      doc.setTextColor(100,100,100);
+      doc.text(`${wedding.brideName} e ${wedding.groomName}  ·  ${fmtDate(wedding.ceremonyDate)}  ·  ${wedding.receptionVenue||""}  ·  ${wedding.guestCount||"—"} convidados`, pw/2, 28, {align:"center"});
+
+      // Linha separadora
+      doc.setDrawColor(170,184,161);
+      doc.setLineWidth(0.5);
+      doc.line(14, 31, pw-14, 31);
+
+      // Tabela
+      doc.autoTable({
+        startY: 35,
+        head:[["Horário","Atividade","Responsável","Observações"]],
+        body: items.map(it=>[it.time, it.activity, it.responsible||"", it.observations||""]),
+        headStyles:{ fillColor:[170,184,161], textColor:255, fontStyle:"bold", fontSize:9 },
+        bodyStyles:{ fontSize:8.5, cellPadding:2.5, valign:"top" },
+        alternateRowStyles:{ fillColor:[250,248,244] },
+        columnStyles:{
+          0:{cellWidth:18, fontStyle:"bold"},
+          1:{cellWidth:75},
+          2:{cellWidth:42},
+          3:{cellWidth:42},
+        },
+        didDrawPage:(data)=>{
+          // Rodapé em cada página
+          const pg = doc.internal.getCurrentPageInfo().pageNumber;
+          const total = doc.internal.getNumberOfPages();
+          doc.setFontSize(7); doc.setTextColor(180,180,180);
+          doc.text("Desenvolvido por Silvana Santana – Cerimonial Sorriso",pw/2,doc.internal.pageSize.getHeight()-6,{align:"center"});
+          doc.text(`${pg}/${total}`,pw-14,doc.internal.pageSize.getHeight()-6,{align:"right"});
+        }
+      });
+
+      const pdfUrl = doc.output("datauristring");
+      setPdfUrl(pdfUrl);
+    } catch(e) {
+      console.error("jsPDF error:",e);
+      showToast("Use Ctrl+P para imprimir a pré-visualização","info");
+    }
+  };
+
+  if (generating) return (
+    <div className="app">
+      <div className="hdr"><Logo/></div>
+      <div className="gen-box">
+        <div className="gen-rings"><div className="gen-ring"/><div className="gen-ring"/><div className="gen-ring"/></div>
+        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.4rem",marginBottom:8}}>Gerando Cronograma com IA…</div>
+        <div style={{color:"var(--mid)",fontSize:".88rem"}}>Analisando todos os detalhes de <strong>{wedding.brideName} e {wedding.groomName}</strong></div>
+      </div>
+      <div className="footer">Desenvolvido por Silvana Santana – Cerimonial Sorriso</div>
+    </div>
+  );
+
+  return (
+    <div className="app">
+      <div className="hdr">
+        <Logo/>
+        <div className="hdr-right">
+          {generated&&<div className="autosave"><div className={`as-dot${saving?" saving":""}`}/>{saving?"Salvando…":"Salvo"}</div>}
+          <button className="btn btn-ghost" onClick={onBack}>← Voltar</button>
+          {generated&&<>
+            <button className="btn btn-secondary btn-sm" onClick={()=>setShowWa(true)}>📲 WhatsApp</button>
+            <button className="btn btn-secondary btn-sm" onClick={exportDocx} title="Copia tabela formatada — cole no Word com Ctrl+V">📋 Copiar p/ Word</button>
+            <button className="btn btn-secondary btn-sm" onClick={exportPDF} title="Abre diálogo de impressão — salve como PDF">🖨 Imprimir / PDF</button>
+          </>}
+        </div>
+      </div>
+
+      <div className="sched-page">
+        <div className="sched-hdr">
+          <div>
+            <div className="page-title" style={{fontFamily:"'Cormorant Garamond',serif"}}>Cronograma Operacional</div>
+            <div className="page-sub">{wedding.brideName} e {wedding.groomName} · {fmtDate(wedding.ceremonyDate)}</div>
+          </div>
+          {!generated
+            ? <button className="btn btn-primary" onClick={generate}>✨ Gerar com IA</button>
+            : <button className="btn btn-secondary" onClick={generate}>🔄 Regenerar</button>
+          }
+        </div>
+
+        {!generated ? (
+          <div style={{textAlign:"center",padding:"60px 20px",background:"#fff",borderRadius:"var(--r)",boxShadow:"var(--sh)"}}>
+            <div style={{fontSize:"3.5rem",marginBottom:16}}>📋</div>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.6rem",marginBottom:8}}>Nenhum cronograma gerado</div>
+            <div style={{color:"var(--mid)",marginBottom:24}}>Clique em "Gerar com IA" para criar automaticamente</div>
+            <button className="btn btn-primary" onClick={generate}>✨ Gerar Cronograma com IA</button>
+          </div>
+        ) : (
+          <div className="sched-doc">
+            <div className="doc-hdr">
+              <div className="doc-title">FESTA DE CASAMENTO</div>
+              <div className="doc-company">Silvana Santana – Cerimonial Sorriso</div>
+              <div className="doc-info">
+                <div className="doc-info-item">💑 {wedding.brideName} e {wedding.groomName}</div>
+                <div className="doc-info-item">📅 {fmtDate(wedding.ceremonyDate)}</div>
+                {wedding.receptionVenue&&<div className="doc-info-item">📍 {wedding.receptionVenue}</div>}
+                {wedding.guestCount&&<div className="doc-info-item">👥 {wedding.guestCount} convidados</div>}
+              </div>
+            </div>
+            <table className="sched-table">
+              <thead><tr><th>Horário</th><th>Atividade</th><th>Responsável</th><th>Observações</th><th></th></tr></thead>
+              <tbody>
+                {items.map((item,i)=>(
+                  <tr key={item.id} className={`sched-row${dragIdx===i?" dragging":""}${dragOver===i?" drag-over":""}`}
+                    draggable onDragStart={e=>onDragStart(e,i)} onDragOver={e=>onDragOver(e,i)} onDrop={e=>onDrop(e,i)} onDragEnd={()=>{setDragIdx(null);setDragOver(null);}}>
+                    <td><input className="cell-in" value={item.time} onChange={e=>updItem(item.id,"time",e.target.value)} style={{width:70,fontWeight:700}}/></td>
+                    <td><textarea className="cell-in" value={item.activity} onChange={e=>updItem(item.id,"activity",e.target.value)} rows={2} style={{minHeight:40}}/></td>
+                    <td><input className="cell-in" value={item.responsible} onChange={e=>updItem(item.id,"responsible",e.target.value)}/></td>
+                    <td><textarea className="cell-in" value={item.observations} onChange={e=>updItem(item.id,"observations",e.target.value)} rows={2} style={{minHeight:40}}/></td>
+                    <td><button className="icon-btn danger" style={{padding:"4px 8px",fontSize:".75rem"}} onClick={()=>delItem(item.id)}>✕</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="add-row-bar">
+              <div className="field" style={{maxWidth:90}}><label>Horário</label><input type="time" value={newRow.time} onChange={e=>setNewRow(r=>({...r,time:e.target.value}))}/></div>
+              <div className="field" style={{flex:2}}><label>Atividade</label><input value={newRow.activity} onChange={e=>setNewRow(r=>({...r,activity:e.target.value}))} placeholder="Nova atividade…"/></div>
+              <div className="field" style={{flex:1}}><label>Responsável</label><input value={newRow.responsible} onChange={e=>setNewRow(r=>({...r,responsible:e.target.value}))}/></div>
+              <div className="field" style={{flex:1}}><label>Observações</label><input value={newRow.observations} onChange={e=>setNewRow(r=>({...r,observations:e.target.value}))}/></div>
+              <div style={{paddingBottom:18}}><button className="btn btn-sage" onClick={addRow}>＋ Adicionar</button></div>
+            </div>
+            <div style={{marginTop:10,fontSize:".73rem",color:"var(--mid)",textAlign:"center"}}>
+              💡 Clique em qualquer campo para editar · Arraste para reordenar · Novos itens entram na ordem cronológica · Salvo automaticamente
+            </div>
+          </div>
+        )}
+      </div>
+
+      {showDocxModal && (
+        <div className="overlay" onClick={()=>setShowDocxModal(false)}>
+          <div className="modal" onClick={e=>e.stopPropagation()}>
+            <div className="modal-title">📋 Copiar para o Word</div>
+            <div className="modal-sub">Clique na área abaixo → Ctrl+A → Ctrl+C → abra o Word → Ctrl+V. A tabela ficará formatada.</div>
+            <textarea
+              readOnly
+              onFocus={e => e.target.select()}
+              style={{width:"100%",height:260,fontSize:".78rem",fontFamily:"monospace",padding:10,border:"1px solid var(--gray)",borderRadius:"var(--rs)",resize:"vertical"}}
+              value={"Horário\tAtividade\tResponsável\tObservações\n" + items.map(it=>`${it.time}\t${it.activity}\t${it.responsible||""}\t${it.observations||""}`).join("\n")}
+            />
+            <div className="modal-actions">
+              <button className="btn btn-secondary" onClick={()=>setShowDocxModal(false)}>Fechar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showWa && <WhatsAppSender wedding={wedding} scheduleItems={items} onClose={()=>setShowWa(false)}/>}
+
+      {/* ── PRINT PREVIEW — tela cheia, CSS @media print oculta tudo exceto isto ── */}
+      {printPreview && (
+        <div id="fc-print-preview" style={{position:"fixed",inset:0,background:"#f0ede8",zIndex:9999,overflowY:"auto"}}>
+          {/* Barra de ação — oculta na impressão via CSS */}
+          <div id="fc-preview-bar" style={{background:"#2A2A28",color:"white",padding:"12px 32px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:1}}>
+            <div style={{display:"flex",alignItems:"center",gap:12}}>
+              <span style={{fontSize:".85rem",color:"rgba(255,255,255,.6)"}}>Pré-visualização — </span>
+              <span style={{fontSize:".9rem",fontWeight:500}}>{wedding.brideName} e {wedding.groomName}</span>
+            </div>
+            <div style={{display:"flex",gap:10,alignItems:"center"}}>
+              <span style={{fontSize:".75rem",color:"rgba(255,255,255,.5)"}}>Ctrl+P também funciona</span>
+              <button
+                className="btn btn-secondary btn-sm"
+                onClick={()=>setPrintPreview(false)}
+              >✕ Fechar</button>
+              {!pdfUrl && (
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={()=>{ try { window.print(); } catch(e) { alert("Use Ctrl+P no teclado para imprimir."); } }}
+                  style={{background:"#16a34a",boxShadow:"none"}}
+                >🖨 Ctrl+P / Imprimir</button>
+              )}
+            </div>
+          </div>
+
+          {/* Se jsPDF gerou o arquivo, mostra iframe com PDF nativo do browser */}
+          {pdfUrl ? (
+            <div style={{flex:1,display:"flex",flexDirection:"column",padding:"0 0 12px"}}>
+              <div style={{textAlign:"center",padding:"8px",fontSize:".78rem",color:"rgba(255,255,255,.5)"}}>
+                Use os botões do visualizador de PDF para imprimir ou baixar 👇
+              </div>
+              <iframe
+                src={pdfUrl}
+                style={{flex:1,width:"100%",height:"calc(100vh - 90px)",border:"none",borderRadius:4}}
+                title="Cronograma PDF"
+              />
+            </div>
+          ) : (
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flex:1,gap:16,padding:40}}>
+              <div className="spinner" style={{width:48,height:48,borderWidth:4}}/>
+              <div style={{color:"rgba(255,255,255,.7)",fontSize:".9rem"}}>Gerando PDF…</div>
+              <div style={{color:"rgba(255,255,255,.4)",fontSize:".78rem"}}>Se demorar, pressione <strong>Ctrl+P</strong> para imprimir a página</div>
+            </div>
+          )}
+        </div>
+      )}
+      <div className="footer">Desenvolvido por Silvana Santana – Cerimonial Sorriso</div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// DASHBOARD
+// ─────────────────────────────────────────────
+function Dashboard({ user, weddings, onNew, onEdit, onSchedule, onDelete, onLogout, onChoosePlan }) {
+  const [del, setDel] = useState(null);
+  const [tab, setTab] = useState("weddings");
+
+  const confirmDelete = async () => { if (!del) return; await onDelete(del.id); setDel(null); };
+
+  const d = daysLeft(user.expiresAt);
+  const planUsed = user.plan?.used||0, planTotal = user.plan?.events||0;
+  const canCreate = user.isAdmin || (user.plan && planUsed < planTotal && !isExpired(user)); // admin tem casamentos ilimitados
+  const noMoreEvents = user.plan && planUsed >= planTotal;
+
+  return (
+    <div className="app">
+      <div className="hdr">
+        <Logo/>
+        <div className="hdr-right">
+          {!user.isAdmin && <UsageWidget user={user}/>}
+          <div className="user-badge">
+            <div className="user-av">{user.name[0].toUpperCase()}</div>
+            <span className="user-name">{user.name}{user.isAdmin?" 👑":""}</span>
+          </div>
+          <button className="btn btn-ghost" onClick={onLogout}>Sair</button>
+        </div>
+      </div>
+
+      <div className="page">
+        {/* Warnings */}
+        {!user.isAdmin && !user.plan && (
+          <div style={{background:"#FEF2F2",border:"1px solid #FECACA",borderRadius:"var(--rs)",padding:"14px 18px",marginBottom:24,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+            <div style={{fontSize:".88rem",color:"#DC2626"}}>🚫 <strong>Nenhum plano ativo.</strong> Adquira um plano para gerar cronogramas.</div>
+            <button className="btn btn-primary btn-sm" onClick={onChoosePlan}>Ver Planos</button>
+          </div>
+        )}
+        {!user.isAdmin && user.plan && d<=7 && d>0 && (
+          <div style={{background:"#FEF3C7",border:"1px solid #FCD34D",borderRadius:"var(--rs)",padding:"12px 18px",marginBottom:24,fontSize:".88rem",color:"#92400E"}}>
+            ⚠ Seu acesso expira em <strong>{d} dia{d!==1?"s":""}</strong> ({new Date(user.expiresAt).toLocaleDateString("pt-BR")}). <span className="fc-link" onClick={onChoosePlan}>Renovar plano</span>
+          </div>
+        )}
+        {noMoreEvents && (
+          <div style={{background:"#FEF3C7",border:"1px solid #FCD34D",borderRadius:"var(--rs)",padding:"12px 18px",marginBottom:24,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+            <div style={{fontSize:".88rem",color:"#92400E"}}>📋 Você usou todos os <strong>{planTotal}</strong> cronogramas do plano atual. Adquira um novo plano para continuar.</div>
+            <button className="btn btn-primary btn-sm" onClick={onChoosePlan}>Novo Plano</button>
+          </div>
+        )}
+
+        {user.isAdmin && (
+          <div className="admin-tabs">
+            <div className={`admin-tab${tab==="weddings"?" active":""}`} onClick={()=>setTab("weddings")}>💍 Meus Casamentos</div>
+            <div className={`admin-tab${tab==="admin"?" active":""}`} onClick={()=>setTab("admin")}>👑 Gestão de Usuários</div>
+          </div>
+        )}
+
+        {tab==="admin" && user.isAdmin && <AdminPanel currentUser={user}/>}
+
+        {tab==="weddings" && (<>
+          <div className="page-hdr">
+            <div>
+              <div className="page-title">Meus Casamentos</div>
+              <div className="page-sub">{weddings.length} evento{weddings.length!==1?"s":""} cadastrado{weddings.length!==1?"s":""}</div>
+            </div>
+            {canCreate && <button className="btn btn-primary" onClick={onNew}>＋ Novo Casamento</button>}
+          </div>
+
+          <div className="grid-cards">
+            {weddings.length===0&&(
+              <div className="empty">
+                <div className="empty-icon">💍</div>
+                <div className="empty-title">Nenhum casamento cadastrado</div>
+                <div className="empty-text">Use o botão "＋ Novo Casamento" acima para começar</div>
+              </div>
+            )}
+            {weddings.map(w=>(
+              <div className="card" key={w.id}>
+                <div className="card-names">{w.brideName||"Noiva"} <span className="card-ring">⚭</span> {w.groomName||"Noivo"}</div>
+                <span className={`badge ${w.status==="done"?"badge-done":"badge-draft"}`}>{w.status==="done"?"✓ Completo":"Rascunho"}</span>
+                <div className="card-meta">
+                  {w.ceremonyDate&&<div className="card-meta-row">📅 {fmtDate(w.ceremonyDate)}{w.ceremonyTime?` às ${w.ceremonyTime}`:""}</div>}
+                  {w.receptionVenue&&<div className="card-meta-row">📍 {w.receptionVenue}</div>}
+                  {w.guestCount&&<div className="card-meta-row">👥 {w.guestCount} convidados</div>}
+                  <div className="card-meta-row" style={{fontSize:".73rem",color:"#aaa"}}>Atualizado: {new Date(w.updatedAt).toLocaleDateString("pt-BR")}</div>
+                </div>
+                <div className="card-actions">
+                  <button className="icon-btn" onClick={()=>onEdit(w)}>✏ Editar</button>
+                  <button className="icon-btn gold" onClick={()=>onSchedule(w)}>📋 Cronograma</button>
+                  <button className="icon-btn danger" onClick={()=>setDel(w)}>🗑</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>)}
+      </div>
+
+      {del&&(
+        <div className="overlay" onClick={()=>setDel(null)}>
+          <div className="modal" onClick={e=>e.stopPropagation()}>
+            <div className="modal-title">Excluir casamento?</div>
+            <div className="modal-sub">Excluir o casamento de <strong>{del.brideName} e {del.groomName}</strong>? Irreversível.</div>
+            <div className="modal-actions">
+              <button className="btn btn-secondary" onClick={()=>setDel(null)}>Cancelar</button>
+              <button className="btn btn-danger" onClick={confirmDelete}>Excluir</button>
+            </div>
+          </div>
+        </div>
+      )}
+      <div className="footer">Desenvolvido por Silvana Santana – Cerimonial Sorriso</div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// MAIN APP
+// ─────────────────────────────────────────────
+export default function App() {
+  const [view, setView] = useState("loading");
+  const [user, setUser] = useState(null);
+  const [weddings, setWeddings] = useState([]);
+  const [editing, setEditing] = useState(null);
+  const [scheduling, setScheduling] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [showPlan, setShowPlan] = useState(false);
+  const [showChoice, setShowChoice] = useState(false);   // modal escolha: manual ou importar
+  const [showImportDash, setShowImportDash] = useState(false); // import modal na dashboard
+  const [prefilledData, setPrefilledData] = useState(null); // dados extraídos do formulário
+  const toastTimer = useRef(null);
+
+  useEffect(() => {
+    let el=document.getElementById("fc-css");
+    if (!el){el=document.createElement("style");el.id="fc-css";document.head.appendChild(el);}
+    el.textContent=CSS;
+    if (!document.getElementById("fc-fonts")){
+      const lnk=document.createElement("link");lnk.id="fc-fonts";lnk.rel="stylesheet";
+      lnk.href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap";
+      document.head.appendChild(lnk);
+    }
+  },[]);
+
+  useEffect(()=>{
+    (async()=>{
+      const session=await store.get("fc-session");
+      if (session){
+        const users=await store.get("fc-users")||[];
+        const u=users.find(x=>x.id===session.userId);
+        if (u){
+          if (isExpired(u)){ await store.del("fc-session"); setView("auth"); return; }
+          setUser(u); await loadWeddings(u.id); setView("dashboard"); return;
+        }
+      }
+      setView("auth");
+    })();
+  },[]);
+
+  const loadWeddings=async(uid)=>{
+    const keys=await store.list(`fc-wedding-${uid}-`);
+    const list=(await Promise.all(keys.map(k=>store.get(k)))).filter(Boolean);
+    list.sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt));
+    setWeddings(list); return list;
+  };
+
+  const showToast=(msg,type="info")=>{
+    clearTimeout(toastTimer.current); setToast({msg,type});
+    toastTimer.current=setTimeout(()=>setToast(null),3500);
+  };
+
+  const refreshUser = async () => {
+    const users=await store.get("fc-users")||[];
+    const u=users.find(x=>x.id===user?.id);
+    if (u) setUser(u);
+  };
+
+  const handleLogin=async(u)=>{ setUser(u); await loadWeddings(u.id); setView("dashboard"); };
+  const handleLogout=async()=>{ await store.del("fc-session"); setUser(null); setWeddings([]); setView("auth"); };
+
+  // Clicou em "+ Novo Casamento" → mostra modal de escolha
+  const handleNew=()=>{ setShowChoice(true); };
+
+  // Escolheu "Preencher Manualmente"
+  const handleManual=()=>{ setPrefilledData(null); setEditing(null); setShowChoice(false); setView("form"); };
+
+  // Escolheu "Importar" → fecha choice e abre import modal
+  const handleChooseImport=()=>{ setShowChoice(false); setShowImportDash(true); };
+
+  // Importação concluída → abre formulário pré-preenchido
+  const handleImportDone=(extracted)=>{
+    setPrefilledData(extracted);
+    setEditing(null);
+    setShowImportDash(false);
+    setView("form");
+    showToast("✓ Dados importados! Revise e salve.","success");
+  };
+
+  const handleEdit=(w)=>{ setPrefilledData(null); setEditing(w); setView("form"); };
+  const handleSchedule=(w)=>{ setScheduling(w); setView("schedule"); };
+  const handleSaveWedding=async()=>{ setPrefilledData(null); await loadWeddings(user.id); setView("dashboard"); };
+  const handleDelete=async(wid)=>{
+    await store.del(`fc-wedding-${user.id}-${wid}`);
+    await store.del(`fc-schedule-${user.id}-${wid}`);
+    setWeddings(ws=>ws.filter(w=>w.id!==wid));
+    showToast("Casamento excluído.","success");
+  };
+
+  if (view==="loading") return (
+    <div className="loading"><div className="spinner"/>
+      <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:"1.2rem",color:"var(--mid)"}}>Carregando…</div>
+    </div>
+  );
+
+  return (
+    <>
+      {view==="auth" && <AuthScreen onLogin={handleLogin}/>}
+
+      {view==="dashboard" && <Dashboard
+        user={user} weddings={weddings}
+        onNew={handleNew} onEdit={handleEdit}
+        onSchedule={handleSchedule} onDelete={handleDelete}
+        onLogout={handleLogout} onChoosePlan={()=>setShowPlan(true)}
+      />}
+
+      {view==="form" && <WeddingForm
+        wedding={editing}
+        prefilled={prefilledData}
+        userId={user.id}
+        onSave={handleSaveWedding}
+        onCancel={()=>{ setPrefilledData(null); setView("dashboard"); }}
+        showToast={showToast}
+      />}
+
+      {view==="schedule" && scheduling && <ScheduleEditor
+        wedding={scheduling} userId={user.id}
+        onBack={async()=>{ await refreshUser(); await loadWeddings(user.id); setView("dashboard"); }}
+        showToast={showToast}
+      />}
+
+      {/* Modal escolha: Manual ou Importar */}
+      {showChoice && (
+        <div className="overlay" onClick={()=>setShowChoice(false)}>
+          <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:480}}>
+            <div className="modal-title">Novo Casamento</div>
+            <div className="modal-sub">Como deseja cadastrar as informações?</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,margin:"8px 0 24px"}}>
+              {/* Opção 1: Manual */}
+              <div onClick={handleManual} style={{border:"2px solid var(--gray)",borderRadius:"var(--r)",padding:24,cursor:"pointer",textAlign:"center",transition:"var(--tr)"}}
+                onMouseEnter={e=>e.currentTarget.style.borderColor="var(--sage)"}
+                onMouseLeave={e=>e.currentTarget.style.borderColor="var(--gray)"}>
+                <div style={{fontSize:"2.5rem",marginBottom:12}}>✍️</div>
+                <div style={{fontFamily:"var(--fd)",fontSize:"1.1rem",fontWeight:600,marginBottom:6}}>Preencher Manualmente</div>
+                <div style={{fontSize:".78rem",color:"var(--mid)"}}>Abre o formulário em branco para preencher campo a campo</div>
+              </div>
+              {/* Opção 2: Importar */}
+              <div onClick={handleChooseImport} style={{border:"2px solid var(--gray)",borderRadius:"var(--r)",padding:24,cursor:"pointer",textAlign:"center",transition:"var(--tr)",background:"rgba(170,184,161,.05)"}}
+                onMouseEnter={e=>e.currentTarget.style.borderColor="var(--gold)"}
+                onMouseLeave={e=>e.currentTarget.style.borderColor="var(--gray)"}>
+                <div style={{fontSize:"2.5rem",marginBottom:12}}>📂</div>
+                <div style={{fontFamily:"var(--fd)",fontSize:"1.1rem",fontWeight:600,marginBottom:6}}>Importar Formulário</div>
+                <div style={{fontSize:".78rem",color:"var(--mid)"}}>Envie o PDF ou DOCX já preenchido — a IA extrai tudo automaticamente</div>
+              </div>
+            </div>
+            <button className="btn btn-ghost btn-full" onClick={()=>setShowChoice(false)}>Cancelar</button>
+          </div>
+        </div>
+      )}
+
+      {/* Import modal vindo da dashboard */}
+      {showImportDash && (
+        <ImportModal
+          onImport={handleImportDone}
+          onClose={()=>setShowImportDash(false)}
+          showToast={showToast}
+        />
+      )}
+
+      {showPlan && <PlanSelector userName={user?.name||""} onClose={()=>setShowPlan(false)}/>}
+      {toast && <Toast msg={toast.msg} type={toast.type}/>}
+    </>
   );
 }
