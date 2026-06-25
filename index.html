@@ -767,221 +767,14 @@ function SupplierManager({suppliers,onChange}) {
   );
 }
 
-// ─────────────────────────────────────────────
-// IMPORT MODAL — extrai dados de PDF ou DOCX via IA
-// ─────────────────────────────────────────────
-const EXTRACTION_PROMPT = `Analise este formulário de casamento e extraia TODOS os dados preenchidos. Retorne APENAS um objeto JSON válido com esta estrutura exata (sem markdown, sem texto adicional):
-
-{
-  "brideName": "",
-  "groomName": "",
-  "ceremonyDate": "YYYY-MM-DD",
-  "ceremonyTime": "HH:MM",
-  "guestCount": "",
-  "receptionVenue": "",
-  "coupleChildren": "",
-  "brideParents": "",
-  "brideSiblings": "",
-  "brideGrandparents": "",
-  "groomParents": "",
-  "groomSiblings": "",
-  "groomGrandparents": "",
-  "brideBridesmaids": "",
-  "groomGroomsmen": "",
-  "flowergirls": "",
-  "ringbearers": "",
-  "partyFeatures": [],
-  "foodOptions": [],
-  "appetizersTime": "",
-  "lunchTime": "",
-  "dinnerTime": "",
-  "dessertTime": "",
-  "brothTime": "",
-  "cakeOptions": [],
-  "bouquetOptions": [],
-  "toastParticipants": [],
-  "danceOptions": [],
-  "accreditationOptions": [],
-  "childrenOptions": [],
-  "tableOptions": [],
-  "favorOptions": [],
-  "specialBouquetToss": false,
-  "specialTieToss": false,
-  "specialDressChange": false,
-  "suppliers": [],
-  "generalNotes": ""
-}
-
-REGRAS DE MAPEAMENTO:
-- ceremonyDate: converta para YYYY-MM-DD (ex: 11/04/2026 → 2026-04-11)
-- ceremonyTime: formato HH:MM (ex: 10h00 → 10:00)
-- partyFeatures: use exatamente estes valores quando marcados: "Entrada especial do casal","Brinde ao casal","Valsa do casal no início da festa","Valsa para abrir a balada","Coreografia no início da festa","Coreografia para abrir a balada","Skypaper","Papel picado","Bolhas de sabão","Velas Sparkle","Acessórios de pista","Bolo servido na mesa","Lembrancinhas","Slide de fotos","Vídeo Love Story","Vídeo para redes sociais","Vídeo de felicitações dos convidados","Brincadeira da gravata","Brincadeira do buquê","Senha e QR Code da internet","Reserva de mesas"
-- foodOptions: "Entrada","Café da manhã","Almoço","Café da tarde","Jantar","Sobremesa","Caldo"
-- cakeOptions: "Será servido na mesa","Será lembrancinha","Bolo verdadeiro","Bolo cenográfico","Não terá bolo"
-- bouquetOptions: "Apenas um buquê","Cerimonialista levará ao salão","Decoradora entregará","Outra pessoa levará","Jogarei o mesmo buquê","Jogarei outro buquê","Darei de presente","Não jogarei buquê"
-- toastParticipants: "Casal","Pais","Padrinhos","Filhos","Avós","Irmãos","Cunhados"
-- danceOptions: "Terá balada","Não terá balada","Coreografia do casal","Coreografia coletiva","Sem abertura oficial"
-- accreditationOptions: "Lista","Convite","Número exato","Lista + Convite","QR Code"
-- childrenOptions: "Terá monitores","Não terá monitores","Espaço kids","Não terá espaço kids","Não haverá crianças"
-- favorOptions: "Uma por pessoa","Uma por família","Apenas adultos","Lembrancinhas diferentes para crianças","Distribuição após refeição","Distribuição durante a balada"
-- tableOptions: "Menores de 3 anos no colo","Serviço para convidados acima de 3 anos","Mesa para 6 lugares","Mesa para 8 lugares","Mesa para 10 lugares","Mesa para 20 lugares"
-- suppliers: para cada fornecedor listado, crie {id:"",name:"nome",category:"categoria",company:"empresa",responsible:"responsável",phone:"telefone",email:"",arrivalTime:"",departureTime:"",notes:"observações"}. Categorias: DJ,Banda,Buffet,Decoração,Foto,Filmagem,Celebrante,Sonorização,Drinks,Segurança,Espaço,Doces,Bolo,Chopp,Lembrancinhas,Plataforma 360°,Cabine de fotos,Outros
-- specialBouquetToss: true se brincadeira do buquê marcada como Sim
-- specialTieToss: true se brincadeira da gravata marcada como Sim
-- specialDressChange: true se troca de vestido marcada como Sim
-- generalNotes: inclua observações, detalhes operacionais, informações sobre convidados especiais, observações sobre família, etc.
-- Campos não preenchidos: string vazia "" ou array vazio []`;
-
-function ImportModal({ onImport, onClose, showToast }) {
-  const [file, setFile] = useState(null);
-  const [processing, setProcessing] = useState(false);
-  const [step, setStep] = useState('');
-  const fileRef = useRef();
-
-  const toBase64 = (f) => new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(r.result.split(',')[1]);
-    r.onerror = rej;
-    r.readAsDataURL(f);
-  });
-
-  const loadMammoth = () => new Promise((res, rej) => {
-    if (window.mammoth) { res(window.mammoth); return; }
-    const s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js';
-    s.onload = () => res(window.mammoth);
-    s.onerror = rej;
-    document.head.appendChild(s);
-  });
-
-  const processFile = async () => {
-    if (!file) return;
-    setProcessing(true);
-    try {
-      let messages;
-      const isPDF = file.name.toLowerCase().endsWith('.pdf');
-      const isDOCX = file.name.toLowerCase().endsWith('.docx');
-
-      if (isPDF) {
-        setStep('Lendo PDF…');
-        const b64 = await toBase64(file);
-        messages = [{ role: 'user', content: [
-          { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: b64 } },
-          { type: 'text', text: EXTRACTION_PROMPT }
-        ]}];
-      } else if (isDOCX) {
-        setStep('Convertendo DOCX…');
-        const mammoth = await loadMammoth();
-        const buf = await file.arrayBuffer();
-        const result = await mammoth.extractRawText({ arrayBuffer: buf });
-        messages = [{ role: 'user', content: `${EXTRACTION_PROMPT}\n\nCONTEÚDO DO FORMULÁRIO:\n${result.value}` }];
-      } else {
-        showToast('Use arquivos PDF ou DOCX.', 'error');
-        setProcessing(false); return;
-      }
-
-      setStep('Extraindo dados com IA…');
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 4000,
-          system: 'Você extrai dados de formulários de casamento. Retorne APENAS JSON válido, sem markdown, sem texto adicional.',
-          messages
-        })
-      });
-      const apiData = await res.json();
-      const text = apiData.content?.map(c => c.text || '').join('') || '{}';
-      const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
-
-      // Add UIDs to suppliers
-      if (parsed.suppliers) parsed.suppliers = parsed.suppliers.map(s => ({ ...s, id: uid() }));
-
-      setStep('Preenchendo formulário…');
-      onImport(parsed);
-      showToast('✓ Formulário importado! Revise os dados preenchidos.', 'success');
-      onClose();
-    } catch (e) {
-      console.error(e);
-      showToast('Erro ao processar. Verifique o arquivo e tente novamente.', 'error');
-    }
-    setProcessing(false);
-  };
-
-  return (
-    <div className="overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
-        <div className="modal-title">📂 Importar Formulário</div>
-        <div className="modal-sub">Envie o formulário preenchido (PDF ou DOCX) e a IA preencherá o cadastro automaticamente.</div>
-
-        <div style={{ background: 'var(--light)', border: '2px dashed var(--gray)', borderRadius: 'var(--rs)', padding: 32, textAlign: 'center', cursor: 'pointer', marginBottom: 20, transition: 'var(--tr)' }}
-          onClick={() => fileRef.current?.click()}
-          onDragOver={e => e.preventDefault()}
-          onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) setFile(f); }}>
-          <input ref={fileRef} type="file" accept=".pdf,.docx" style={{ display: 'none' }} onChange={e => setFile(e.target.files[0])} />
-          {file ? (
-            <div>
-              <div style={{ fontSize: '2rem', marginBottom: 8 }}>{file.name.endsWith('.pdf') ? '📄' : '📝'}</div>
-              <div style={{ fontWeight: 600, color: 'var(--dark)', marginBottom: 4 }}>{file.name}</div>
-              <div style={{ fontSize: '.78rem', color: 'var(--mid)' }}>{(file.size / 1024).toFixed(0)} KB · Clique para trocar</div>
-            </div>
-          ) : (
-            <div>
-              <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>📁</div>
-              <div style={{ fontWeight: 600, color: 'var(--dark)', marginBottom: 4 }}>Clique ou arraste o arquivo aqui</div>
-              <div style={{ fontSize: '.82rem', color: 'var(--mid)' }}>Aceita PDF e DOCX</div>
-            </div>
-          )}
-        </div>
-
-        <div style={{ background: 'rgba(170,184,161,.1)', border: '1px solid var(--sage-l)', borderRadius: 'var(--rs)', padding: '10px 14px', fontSize: '.8rem', color: 'var(--mid)', marginBottom: 20 }}>
-          💡 Funciona com o <strong>Formulário Master (.docx)</strong> e o <strong>Questionário Google Forms (.pdf)</strong>. Após importar, revise e ajuste os campos antes de salvar.
-        </div>
-
-        {processing && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: 'var(--beige)', borderRadius: 'var(--rs)', marginBottom: 16 }}>
-            <div className="spinner" style={{ width: 20, height: 20, borderWidth: 2 }} />
-            <div style={{ fontSize: '.85rem', color: 'var(--dark)' }}>{step}</div>
-          </div>
-        )}
-
-        <div className="modal-actions">
-          <button className="btn btn-secondary" onClick={onClose} disabled={processing}>Cancelar</button>
-          <button className="btn btn-primary" onClick={processFile} disabled={!file || processing}>
-            {processing ? 'Processando…' : '✨ Importar e Preencher'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function WeddingForm({wedding, prefilled, userId,onSave,onCancel,showToast}) {
-  const [data,setData]=useState(()=>{
-    const base = {...emptyWedding(),...wedding,userId};
-    if (prefilled) {
-      const clean = Object.fromEntries(Object.entries(prefilled).filter(([,v])=>v!==''&&v!==null&&v!==undefined&&!(Array.isArray(v)&&v.length===0)));
-      return {...base,...clean};
-    }
-    return base;
-  });
+function WeddingForm({wedding,userId,onSave,onCancel,showToast}) {
+  const [data,setData]=useState(()=>({...emptyWedding(),...wedding,userId}));
   const [active,setActive]=useState(0);
   const [saving,setSaving]=useState(false);
-  const [showImport, setShowImport]=useState(false);
   const secRefs=useRef([]);
   const saveTimer=useRef(null);
   const upd=(k,v)=>setData(d=>({...d,[k]:v,updatedAt:now()}));
 
-  const handleImport = (imported) => {
-    setData(d => ({
-      ...d,
-      ...Object.fromEntries(Object.entries(imported).filter(([,v]) => v !== '' && v !== null && v !== undefined && !(Array.isArray(v) && v.length === 0))),
-      updatedAt: now()
-    }));
-    // Scroll to top of form
-    secRefs.current[0]?.scrollIntoView({ behavior: 'smooth' });
-  };
 
   useEffect(()=>{
     clearTimeout(saveTimer.current); setSaving(true);
@@ -1016,7 +809,6 @@ function WeddingForm({wedding, prefilled, userId,onSave,onCancel,showToast}) {
         <div className="hdr-right">
           <div className="autosave"><div className={`as-dot${saving?" saving":""}`}/>{saving?"Salvando…":"Salvo"}</div>
           <button className="btn btn-ghost" onClick={onCancel}>← Voltar</button>
-          <button className="btn btn-secondary btn-sm" onClick={()=>setShowImport(true)} title="Importar formulário PDF ou DOCX">📂 Importar</button>
           <button className="btn btn-primary" onClick={handleSave}>Salvar Casamento</button>
         </div>
       </div>
@@ -1113,7 +905,6 @@ function WeddingForm({wedding, prefilled, userId,onSave,onCancel,showToast}) {
         </div>
       </div>
       <div className="footer">Desenvolvido por Silvana Santana – Cerimonial Sorriso</div>
-      {showImport && <ImportModal onImport={handleImport} onClose={()=>setShowImport(false)} showToast={showToast}/>}
     </div>
   );
 }
@@ -1765,9 +1556,6 @@ function App() {
   const [scheduling, setScheduling] = useState(null);
   const [toast, setToast] = useState(null);
   const [showPlan, setShowPlan] = useState(false);
-  const [showChoice, setShowChoice] = useState(false);   // modal escolha: manual ou importar
-  const [showImportDash, setShowImportDash] = useState(false); // import modal na dashboard
-  const [prefilledData, setPrefilledData] = useState(null); // dados extraídos do formulário
   const toastTimer = useRef(null);
 
   useEffect(() => {
@@ -1783,10 +1571,27 @@ function App() {
 
   useEffect(()=>{
     (async()=>{
+      // Garante que a conta admin sempre existe
+      const users = await store.get("fc-users") || [];
+      const adminEmail = "cerimonialjuara@gmail.com";
+      if (!users.find(u => u.email === adminEmail)) {
+        const adminUser = {
+          id: "admin-silvana-2026",
+          name: "Silvana Santana",
+          email: adminEmail,
+          password: "cronograma2026",
+          createdAt: now(),
+          isAdmin: true,
+          expiresAt: null,
+          plan: { id:"admin", events:9999, used:0, activatedAt: now(), expiresAt: null }
+        };
+        await store.set("fc-users", [...users, adminUser]);
+      }
+
       const session=await store.get("fc-session");
       if (session){
-        const users=await store.get("fc-users")||[];
-        const u=users.find(x=>x.id===session.userId);
+        const allUsers=await store.get("fc-users")||[];
+        const u=allUsers.find(x=>x.id===session.userId);
         if (u){
           if (isExpired(u)){ await store.del("fc-session"); setView("auth"); return; }
           setUser(u); await loadWeddings(u.id); setView("dashboard"); return;
@@ -1816,28 +1621,10 @@ function App() {
 
   const handleLogin=async(u)=>{ setUser(u); await loadWeddings(u.id); setView("dashboard"); };
   const handleLogout=async()=>{ await store.del("fc-session"); setUser(null); setWeddings([]); setView("auth"); };
-
-  // Clicou em "+ Novo Casamento" → mostra modal de escolha
-  const handleNew=()=>{ setShowChoice(true); };
-
-  // Escolheu "Preencher Manualmente"
-  const handleManual=()=>{ setPrefilledData(null); setEditing(null); setShowChoice(false); setView("form"); };
-
-  // Escolheu "Importar" → fecha choice e abre import modal
-  const handleChooseImport=()=>{ setShowChoice(false); setShowImportDash(true); };
-
-  // Importação concluída → abre formulário pré-preenchido
-  const handleImportDone=(extracted)=>{
-    setPrefilledData(extracted);
-    setEditing(null);
-    setShowImportDash(false);
-    setView("form");
-    showToast("✓ Dados importados! Revise e salve.","success");
-  };
-
-  const handleEdit=(w)=>{ setPrefilledData(null); setEditing(w); setView("form"); };
+  const handleNew=()=>{ setEditing(null); setView("form"); };
+  const handleEdit=(w)=>{ setEditing(w); setView("form"); };
   const handleSchedule=(w)=>{ setScheduling(w); setView("schedule"); };
-  const handleSaveWedding=async()=>{ setPrefilledData(null); await loadWeddings(user.id); setView("dashboard"); };
+  const handleSaveWedding=async()=>{ await loadWeddings(user.id); setView("dashboard"); };
   const handleDelete=async(wid)=>{
     await store.del(`fc-wedding-${user.id}-${wid}`);
     await store.del(`fc-schedule-${user.id}-${wid}`);
@@ -1862,14 +1649,7 @@ function App() {
         onLogout={handleLogout} onChoosePlan={()=>setShowPlan(true)}
       />}
 
-      {view==="form" && <WeddingForm
-        wedding={editing}
-        prefilled={prefilledData}
-        userId={user.id}
-        onSave={handleSaveWedding}
-        onCancel={()=>{ setPrefilledData(null); setView("dashboard"); }}
-        showToast={showToast}
-      />}
+      {view==="form" && <WeddingForm wedding={editing} userId={user.id} onSave={handleSaveWedding} onCancel={()=>setView("dashboard")} showToast={showToast}/>}
 
       {view==="schedule" && scheduling && <ScheduleEditor
         wedding={scheduling} userId={user.id}
@@ -1877,45 +1657,7 @@ function App() {
         showToast={showToast}
       />}
 
-      {/* Modal escolha: Manual ou Importar */}
-      {showChoice && (
-        <div className="overlay" onClick={()=>setShowChoice(false)}>
-          <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:480}}>
-            <div className="modal-title">Novo Casamento</div>
-            <div className="modal-sub">Como deseja cadastrar as informações?</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,margin:"8px 0 24px"}}>
-              {/* Opção 1: Manual */}
-              <div onClick={handleManual} style={{border:"2px solid var(--gray)",borderRadius:"var(--r)",padding:24,cursor:"pointer",textAlign:"center",transition:"var(--tr)"}}
-                onMouseEnter={e=>e.currentTarget.style.borderColor="var(--sage)"}
-                onMouseLeave={e=>e.currentTarget.style.borderColor="var(--gray)"}>
-                <div style={{fontSize:"2.5rem",marginBottom:12}}>✍️</div>
-                <div style={{fontFamily:"var(--fd)",fontSize:"1.1rem",fontWeight:600,marginBottom:6}}>Preencher Manualmente</div>
-                <div style={{fontSize:".78rem",color:"var(--mid)"}}>Abre o formulário em branco para preencher campo a campo</div>
-              </div>
-              {/* Opção 2: Importar */}
-              <div onClick={handleChooseImport} style={{border:"2px solid var(--gray)",borderRadius:"var(--r)",padding:24,cursor:"pointer",textAlign:"center",transition:"var(--tr)",background:"rgba(170,184,161,.05)"}}
-                onMouseEnter={e=>e.currentTarget.style.borderColor="var(--gold)"}
-                onMouseLeave={e=>e.currentTarget.style.borderColor="var(--gray)"}>
-                <div style={{fontSize:"2.5rem",marginBottom:12}}>📂</div>
-                <div style={{fontFamily:"var(--fd)",fontSize:"1.1rem",fontWeight:600,marginBottom:6}}>Importar Formulário</div>
-                <div style={{fontSize:".78rem",color:"var(--mid)"}}>Envie o PDF ou DOCX já preenchido — a IA extrai tudo automaticamente</div>
-              </div>
-            </div>
-            <button className="btn btn-ghost btn-full" onClick={()=>setShowChoice(false)}>Cancelar</button>
-          </div>
-        </div>
-      )}
-
-      {/* Import modal vindo da dashboard */}
-      {showImportDash && (
-        <ImportModal
-          onImport={handleImportDone}
-          onClose={()=>setShowImportDash(false)}
-          showToast={showToast}
-        />
-      )}
-
-      {showPlan && <PlanSelector userName={user?.name||""} onClose={()=>setShowPlan(false)}/>}
+            {showPlan && <PlanSelector userName={user?.name||""} onClose={()=>setShowPlan(false)}/>}
       {toast && <Toast msg={toast.msg} type={toast.type}/>}
     </>
   );
