@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+  <meta http-equiv="Pragma" content="no-cache"/>
+  <meta http-equiv="Expires" content="0"/>
   <title>Festa de Casamento – Cerimonial Sorriso</title>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -274,6 +277,22 @@ const filterItemsForCategory = (items, category) => {
   );
 };
 
+// ===== PASSWORD CONFIG =====
+// Senhas definidas aqui — admin edita este arquivo para adicionar/remover clientes
+// Format: {pwd, expires: 'YYYY-MM-DD' or null, isAdmin: bool, name: string}
+const PWDS_CONFIG = [
+  {pwd:'silvana2026',   expires:null,         isAdmin:true,  name:'Silvana Santana'},
+  // Adicione senhas de clientes abaixo — expiram na data informada:
+  // {pwd:'noivos001',  expires:'2026-12-31',  isAdmin:false, name:'Nome do Casal'},
+];
+
+const findPwd = (pwd) => {
+  const entry = PWDS_CONFIG.find(p => p.pwd === pwd);
+  if (!entry) return null;
+  if (entry.expires && new Date(entry.expires) < new Date()) return {expired: true, name: entry.name};
+  return entry;
+};
+
 // Storage
 const store = {
   async get(k)    { try { const r = await window.storage.get(k); return r ? JSON.parse(r.value) : null; } catch { return null; } },
@@ -377,58 +396,32 @@ function PlanSelector({ userName, onSelect, onClose }) {
 }
 
 // ─────────────────────────────────────────────
-// AUTH SCREEN
+// AUTH SCREEN — password only, no registration
 // ─────────────────────────────────────────────
 function AuthScreen({ onLogin }) {
-  const [mode, setMode] = useState("login");
-  const [form, setForm] = useState({name:"",email:"",password:"",confirm:""});
-  const [err, setErr] = useState("");
+  const [pwd, setPwd] = useState('');
+  const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
-  const [ok, setOk] = useState("");
-  const set = (k,v) => setForm(f=>({...f,[k]:v}));
 
   const handleLogin = async () => {
-    setErr(""); setLoading(true);
-    const users = await store.get("fc-users") || [];
-    const user = users.find(u => u.email===form.email && u.password===form.password);
-    if (!user) { setErr("E-mail ou senha incorretos."); setLoading(false); return; }
-    if (isExpired(user)) { setErr("Seu acesso expirou. Entre em contato com a administradora para renovar."); setLoading(false); return; }
-    await store.set("fc-session", {userId: user.id});
-    onLogin(user); setLoading(false);
-  };
-
-  const handleRegister = async () => {
-    setErr("");
-    if (!form.name||!form.email||!form.password) { setErr("Preencha todos os campos."); return; }
-    if (form.password!==form.confirm) { setErr("As senhas não conferem."); return; }
-    if (form.password.length<6) { setErr("Senha deve ter ao menos 6 caracteres."); return; }
-    setLoading(true);
-    const users = await store.get("fc-users") || [];
-    if (users.find(u=>u.email===form.email)) { setErr("E-mail já cadastrado."); setLoading(false); return; }
-    const isFirst = users.length===0;
-    const createdAt = now();
-    const user = {
-      id: uid(), name: form.name, email: form.email, password: form.password, createdAt,
-      isAdmin: isFirst,
-      expiresAt: isFirst ? null : addDays(createdAt, 30),
-      plan: isFirst ? {id:"admin", events:9999, used:0, activatedAt: createdAt, expiresAt: null} : null,
+    setErr(''); setLoading(true);
+    const entry = findPwd(pwd.trim());
+    if (!entry) { setErr('Senha incorreta.'); setLoading(false); return; }
+    if (entry.expired) { setErr(`Acesso expirado. Entre em contato com Silvana.`); setLoading(false); return; }
+    // Create/retrieve session user based on password
+    const userId = 'user-' + pwd.trim();
+    const sessionUser = {
+      id: userId,
+      name: entry.name,
+      pwd: pwd.trim(),
+      isAdmin: entry.isAdmin,
+      expiresAt: entry.expires,
+      plan: { id: entry.isAdmin?'admin':'client', events: entry.isAdmin?9999:99, used:0 }
     };
-    await store.set("fc-users", [...users, user]);
-    await store.set("fc-session", {userId: user.id});
-    onLogin(user); setLoading(false);
+    await store.set('fc-session', { userId, pwd: pwd.trim() });
+    onLogin(sessionUser);
+    setLoading(false);
   };
-
-  const handleForgot = async () => {
-    setErr("");
-    if (!form.email) { setErr("Digite seu e-mail."); return; }
-    const users = await store.get("fc-users") || [];
-    const user = users.find(u=>u.email===form.email);
-    if (!user) { setErr("E-mail não encontrado."); return; }
-    setOk(`Senha: ${user.password}`);
-  };
-
-  const errBox = (msg) => msg ? <div style={{color:"#DC2626",fontSize:".85rem",marginBottom:14,padding:"10px 14px",background:"#FEF2F2",borderRadius:8}}>{msg}</div> : null;
-  const okBox  = (msg) => msg ? <div style={{color:"#166534",fontSize:".85rem",marginBottom:14,padding:"10px 14px",background:"#DCFCE7",borderRadius:8}}>{msg}</div> : null;
 
   return (
     <div className="auth">
@@ -439,56 +432,93 @@ function AuthScreen({ onLogin }) {
       </div>
       <div className="auth-right">
         <div className="auth-form">
-          {mode==="login" && <>
-            <div className="auth-title">Bem-vinda de volta</div>
-            <div className="auth-sub">Acesse sua conta para gerenciar seus casamentos</div>
-            {errBox(err)}
-            <div className="field"><label>E-mail</label><input type="email" value={form.email} onChange={e=>set("email",e.target.value)} placeholder="seu@email.com"/></div>
-            <div className="field"><label>Senha</label><input type="password" value={form.password} onChange={e=>set("password",e.target.value)} placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&handleLogin()}/></div>
-            <button className="btn btn-primary btn-full" onClick={handleLogin} disabled={loading}>{loading?"Entrando…":"Entrar"}</button>
-            <div style={{textAlign:"center",marginTop:20,fontSize:".85rem",color:"var(--mid)"}}>
-              <span className="fc-link" onClick={()=>{setMode("forgot");setErr("");}}>Esqueci minha senha</span>
-              {" · "}
-              <span className="fc-link" onClick={()=>{setMode("register");setErr("");}}>Criar conta</span>
-            </div>
-            <hr className="div" style={{marginTop:28}}/>
-            <div style={{textAlign:"center"}}>
-              <div style={{fontSize:".75rem",color:"var(--mid)",marginBottom:10}}>Problemas para entrar? Limpe os dados e crie uma nova conta.</div>
-              <button className="btn btn-danger btn-sm" onClick={async()=>{
-                if (!window.confirm("Isso apagará TODAS as contas e casamentos salvos. Continuar?")) return;
-                const keys = await store.list("fc-");
-                for (const k of keys) await store.del(k);
-                await store.del("fc-session");
-                await store.del("fc-users");
-                setErr(""); setOk(""); setForm({name:"",email:"",password:"",confirm:""});
-                alert("Dados apagados. Agora crie uma nova conta.");
-              }}>🗑 Limpar todos os dados</button>
-            </div>
-          </>}
-          {mode==="register" && <>
-            <div className="auth-title">Criar conta</div>
-            <div className="auth-sub">Comece a organizar seus casamentos agora</div>
-            {errBox(err)}
-            <div className="field"><label>Nome completo</label><input value={form.name} onChange={e=>set("name",e.target.value)} placeholder="Seu nome"/></div>
-            <div className="field"><label>E-mail</label><input type="email" value={form.email} onChange={e=>set("email",e.target.value)} placeholder="seu@email.com"/></div>
-            <div className="field"><label>Senha</label><input type="password" value={form.password} onChange={e=>set("password",e.target.value)} placeholder="Mínimo 6 caracteres"/></div>
-            <div className="field"><label>Confirmar senha</label><input type="password" value={form.confirm} onChange={e=>set("confirm",e.target.value)} placeholder="Repita a senha"/></div>
-            <button className="btn btn-primary btn-full" onClick={handleRegister} disabled={loading}>{loading?"Criando…":"Criar conta"}</button>
-            <div style={{textAlign:"center",marginTop:18,fontSize:".85rem"}}>
-              <span className="fc-link" onClick={()=>{setMode("login");setErr("");}}>Já tenho conta</span>
-            </div>
-          </>}
-          {mode==="forgot" && <>
-            <div className="auth-title">Recuperar senha</div>
-            <div className="auth-sub">Informe o e-mail cadastrado</div>
-            {errBox(err)}{okBox(ok)}
-            <div className="field"><label>E-mail</label><input type="email" value={form.email} onChange={e=>set("email",e.target.value)} placeholder="seu@email.com"/></div>
-            <button className="btn btn-primary btn-full" onClick={handleForgot}>Recuperar</button>
-            <div style={{textAlign:"center",marginTop:18,fontSize:".85rem"}}>
-              <span className="fc-link" onClick={()=>{setMode("login");setErr("");setOk("");}}>Voltar ao login</span>
-            </div>
-          </>}
+          <div className="auth-title">Bem-vinda</div>
+          <div className="auth-sub">Digite a senha de acesso fornecida pelo cerimonial</div>
+          {err && <div style={{color:"#DC2626",fontSize:".85rem",marginBottom:14,padding:"10px 14px",background:"#FEF2F2",borderRadius:8}}>{err}</div>}
+          <div className="field">
+            <label>Senha de acesso</label>
+            <input
+              type="password"
+              value={pwd}
+              onChange={e=>setPwd(e.target.value)}
+              placeholder="Digite sua senha"
+              onKeyDown={e=>e.key==='Enter'&&handleLogin()}
+              autoFocus
+            />
+          </div>
+          <button className="btn btn-primary btn-full" onClick={handleLogin} disabled={loading||!pwd}>
+            {loading ? 'Verificando…' : 'Entrar'}
+          </button>
+          <div style={{textAlign:"center",marginTop:24,fontSize:".8rem",color:"var(--mid)"}}>
+            Não tem senha? Entre em contato com<br/>
+            <strong style={{color:"var(--gold-d)"}}>Silvana Santana – Cerimonial Sorriso</strong>
+          </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// PLAN SELECTOR MODAL
+// ─────────────────────────────────────────────
+function PlanSelector({ userName, onSelect, onClose }) {
+  const [chosen, setChosen] = useState(null);
+  const [showMsg, setShowMsg] = useState(false);
+
+  const ADMIN_WA = "5566999999999"; // ← Troque pelo seu número WhatsApp
+
+  const buildWaMsg = (plan) => {
+    const p = PLANS.find(x => x.id === plan);
+    return `Olá, Silvana! Sou ${userName} e gostaria de contratar o plano *${p.name}* do sistema Festa de Casamento.\n\nDetalhes:\n- Plano: ${p.name}\n- Cronogramas: ${p.events}\n- Validade: ${p.days} dias\n- Valor: R$ ${p.price.toFixed(2).replace(".",",")}\n\nAguardo a confirmação. Obrigado(a)!`;
+  };
+
+  const handleRequest = () => {
+    if (!chosen) return;
+    const msg = buildWaMsg(chosen);
+    const url = `https://wa.me/${ADMIN_WA}?text=${encodeURIComponent(msg)}`;
+    window.open(url, "_blank");
+    setShowMsg(true);
+  };
+
+  return (
+    <div className="overlay">
+      <div className="modal modal-lg">
+        <div className="modal-title">Escolha seu Plano</div>
+        <div className="modal-sub">Selecione a quantidade de cronogramas que precisará. Não acumulam para o próximo período.</div>
+
+        <div className="plan-grid">
+          {PLANS.map(p => (
+            <div key={p.id} className={`plan-card${chosen===p.id?" selected":""}`} onClick={() => setChosen(p.id)}>
+              {p.discount > 0 && <div className="plan-discount">-{p.discount}%</div>}
+              <div className="plan-name">{p.name}</div>
+              <div className="plan-price">R$ {p.price.toFixed(2).replace(".",",")}</div>
+              <div className="plan-events">{p.events} cronograma{p.events>1?"s":""} · {p.days} dias</div>
+              <div style={{fontSize:".72rem",color:"var(--mid)"}}>R$ {p.basePrice.toFixed(2).replace(".",",")} por cronograma{p.discount>0?` (${p.discount}% off)`:""}</div>
+            </div>
+          ))}
+        </div>
+
+        {!showMsg ? (
+          <>
+            <div style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"var(--rs)",padding:"12px 16px",fontSize:".83rem",color:"#166534",marginBottom:18}}>
+              💬 Ao clicar em "Solicitar via WhatsApp", você será direcionado para conversa com Silvana para confirmar o pagamento. O plano é ativado após confirmação.
+            </div>
+            <div className="modal-actions">
+              {onClose && <button className="btn btn-ghost" onClick={onClose}>Agora não</button>}
+              <button className="btn btn-green" disabled={!chosen} onClick={handleRequest}>
+                <span>📲</span> Solicitar via WhatsApp
+              </button>
+            </div>
+          </>
+        ) : (
+          <div style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:"var(--rs)",padding:"16px",textAlign:"center"}}>
+            <div style={{fontSize:"1.5rem",marginBottom:8}}>✅</div>
+            <div style={{fontWeight:600,marginBottom:4}}>Mensagem enviada!</div>
+            <div style={{fontSize:".85rem",color:"var(--mid)",marginBottom:16}}>Assim que o pagamento for confirmado, Silvana ativará seu plano.</div>
+            {onClose && <button className="btn btn-primary" onClick={onClose}>Fechar</button>}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -521,156 +551,44 @@ function UsageWidget({ user }) {
 }
 
 // ─────────────────────────────────────────────
-// ADMIN PANEL
+// ADMIN PANEL — shows active passwords
 // ─────────────────────────────────────────────
-function AdminPanel({ currentUser }) {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [editPlan, setEditPlan] = useState(null); // {userId, planId, events}
-  const [confirmDel, setConfirmDel] = useState(null);
-
-  const load = async () => { setLoading(true); setUsers(await store.get("fc-users")||[]); setLoading(false); };
-  useEffect(() => { load(); }, []);
-
-  const save = async (updated) => { await store.set("fc-users", updated); setUsers(updated); };
-
-  const activatePlan = async (userId, planId, customEvents) => {
-    const plan = PLANS.find(p=>p.id===planId);
-    if (!plan) return;
-    const events = customEvents || plan.events;
-    const activatedAt = now();
-    const expiresAt = addDays(activatedAt, plan.days);
-    const updated = users.map(u => u.id!==userId ? u : {
-      ...u,
-      expiresAt,
-      plan: {id: planId, events, used: u.plan?.used||0, activatedAt, expiresAt}
-    });
-    await save(updated); setEditPlan(null);
-  };
-
-  const setLifetime = async (id) => {
-    const updated = users.map(u => u.id!==id ? u : {
-      ...u, isAdmin: true, expiresAt: null,
-      plan: {id:"admin", events:9999, used: u.plan?.used||0, activatedAt: now(), expiresAt: null}
-    });
-    await save(updated);
-  };
-
-  const revoke = async (id) => {
-    const updated = users.map(u => u.id!==id ? u : {...u, expiresAt: addDays(now(),-1), plan: null});
-    await save(updated);
-  };
-
-  const deleteUser = async (id) => { await save(users.filter(u=>u.id!==id)); setConfirmDel(null); };
-
-  const expLabel = (u) => {
-    if (u.isAdmin && !u.expiresAt) return <span className="exp-admin">👑 Admin Vitalício</span>;
-    const d = daysLeft(u.expiresAt);
-    if (d<=0) return <span className="exp-expired">Expirado</span>;
-    if (d<=7) return <span className="exp-warn">⚠ {d}d</span>;
-    return <span className="exp-ok">✓ {d}d</span>;
-  };
-
-  if (loading) return <div style={{padding:40,textAlign:"center"}}><div className="spinner" style={{margin:"0 auto"}}/></div>;
-
+function AdminPanel() {
+  const today = new Date();
   return (
     <div>
       <div style={{background:"#FEF9EC",border:"1px solid rgba(201,168,106,.3)",borderRadius:"var(--rs)",padding:"14px 18px",marginBottom:24,fontSize:".85rem",color:"var(--gold-d)"}}>
-        💡 <strong>Integração de pagamento:</strong> Configure seus produtos no <strong>systeme.io</strong> para cada plano e compartilhe os links de checkout com seus clientes. Após confirmação do pagamento, ative o plano manualmente aqui. Em breve: ativação automática via webhook.
+        💡 Para adicionar ou remover senhas de clientes, edite o arquivo <strong>index.html</strong> no GitHub e altere o array <strong>PWDS_CONFIG</strong>.
       </div>
-
-      <div className="page-hdr" style={{marginBottom:20}}>
-        <div>
-          <div className="page-title" style={{fontSize:"1.5rem"}}>Gestão de Usuários</div>
-          <div className="page-sub">{users.length} conta{users.length!==1?"s":""} cadastrada{users.length!==1?"s":""}</div>
-        </div>
+      <div className="page-title" style={{fontSize:"1.4rem",marginBottom:20}}>Senhas Ativas</div>
+      <table className="users-table">
+        <thead><tr>
+          <th>Nome</th><th>Senha</th><th>Tipo</th><th>Validade</th><th>Status</th>
+        </tr></thead>
+        <tbody>
+          {PWDS_CONFIG.map((p,i) => {
+            const expired = p.expires && new Date(p.expires) < today;
+            const daysLeft = p.expires ? Math.ceil((new Date(p.expires) - today) / 864e5) : null;
+            return (
+              <tr key={i}>
+                <td style={{fontWeight:600}}>{p.name}</td>
+                <td><code style={{background:"var(--light)",padding:"2px 8px",borderRadius:4,fontSize:".85rem"}}>{p.pwd}</code></td>
+                <td>{p.isAdmin ? <span className="exp-admin">👑 Admin</span> : <span className="badge badge-draft">Cliente</span>}</td>
+                <td style={{fontSize:".83rem",color:"var(--mid)"}}>{p.expires || <span style={{color:"var(--gold-d)"}}>Vitalício</span>}</td>
+                <td>
+                  {!p.expires || p.isAdmin ? <span className="exp-ok">✓ Ativo</span>
+                    : expired ? <span className="exp-expired">Expirado</span>
+                    : daysLeft <= 7 ? <span className="exp-warn">⚠ {daysLeft}d</span>
+                    : <span className="exp-ok">✓ {daysLeft}d</span>}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <div style={{marginTop:16,fontSize:".78rem",color:"var(--mid)"}}>
+        Para adicionar um cliente: <code style={{background:"var(--light)",padding:"2px 6px",borderRadius:3}}>{"{"}"pwd:'senhacliente', expires:'2026-12-31', isAdmin:false, name:'Nome do Casal'{"}"}</code>
       </div>
-
-      <div style={{overflowX:"auto"}}>
-        <table className="users-table">
-          <thead><tr>
-            <th>Usuário</th><th>E-mail</th><th>Cadastro</th>
-            <th>Plano</th><th>Uso</th><th>Validade</th><th>Status</th><th>Ações</th>
-          </tr></thead>
-          <tbody>
-            {users.map(u => {
-              const used = u.plan?.used||0, total = u.plan?.events||0;
-              return (
-                <tr key={u.id}>
-                  <td>
-                    <div style={{display:"flex",alignItems:"center",gap:9}}>
-                      <div className="user-av" style={{width:28,height:28,fontSize:".75rem"}}>{u.name[0].toUpperCase()}</div>
-                      <div>
-                        <div style={{fontWeight:600,fontSize:".85rem"}}>{u.name}</div>
-                        {u.isAdmin && <div style={{fontSize:".68rem",color:"var(--gold-d)"}}>Admin</div>}
-                      </div>
-                    </div>
-                  </td>
-                  <td style={{color:"var(--mid)",fontSize:".8rem"}}>{u.email}</td>
-                  <td style={{color:"var(--mid)",fontSize:".8rem"}}>{new Date(u.createdAt).toLocaleDateString("pt-BR")}</td>
-                  <td style={{fontSize:".8rem"}}>{u.plan ? (u.plan.id==="admin"?"Vitalício":PLANS.find(p=>p.id===u.plan.id)?.name||u.plan.id) : <span style={{color:"#DC2626"}}>Sem plano</span>}</td>
-                  <td>
-                    {u.plan && !u.isAdmin ? (
-                      <div style={{minWidth:90}}>
-                        <div style={{fontSize:".75rem",color:"var(--mid)",marginBottom:3}}>{used}/{total}</div>
-                        <div className="usage-bar-wrap" style={{width:80}}><div className={`usage-bar ${used>=total?"full":used/total>=.75?"warn":"ok"}`} style={{width:`${Math.min((used/total)*100,100)}%`}}/></div>
-                      </div>
-                    ) : <span style={{fontSize:".78rem",color:"var(--mid)"}}>—</span>}
-                  </td>
-                  <td style={{fontSize:".8rem"}}>{u.plan?.expiresAt ? new Date(u.plan.expiresAt).toLocaleDateString("pt-BR") : (u.isAdmin?"Vitalício":"—")}</td>
-                  <td>{expLabel(u)}</td>
-                  <td>
-                    {u.id===currentUser.id ? <span style={{fontSize:".73rem",color:"var(--mid)"}}>Sua conta</span> : (
-                      <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-                        <button className="icon-btn sage btn-sm" onClick={()=>setEditPlan({userId:u.id, name:u.name})} title="Ativar plano">📋 Plano</button>
-                        <button className="icon-btn gold btn-sm" onClick={()=>setLifetime(u.id)} title="Tornar admin vitalício">👑</button>
-                        <button className="icon-btn btn-sm" style={{color:"#D97706"}} onClick={()=>revoke(u.id)} title="Revogar">🚫</button>
-                        <button className="icon-btn danger btn-sm" onClick={()=>setConfirmDel(u)} title="Excluir">🗑</button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {editPlan && (
-        <div className="overlay" onClick={()=>setEditPlan(null)}>
-          <div className="modal" onClick={e=>e.stopPropagation()}>
-            <div className="modal-title">Ativar Plano</div>
-            <div className="modal-sub">Ativando plano para <strong>{editPlan.name}</strong></div>
-            <div className="plan-grid" style={{gridTemplateColumns:"1fr 1fr"}}>
-              {PLANS.map(p => (
-                <div key={p.id} className={`plan-card${editPlan.planId===p.id?" selected":""}`} onClick={()=>setEditPlan(ep=>({...ep,planId:p.id}))}>
-                  {p.discount>0&&<div className="plan-discount">-{p.discount}%</div>}
-                  <div className="plan-name">{p.name}</div>
-                  <div className="plan-price">R$ {p.price.toFixed(2).replace(".",",")}</div>
-                  <div className="plan-events">{p.events} cronograma{p.events>1?"s":""} · {p.days}d</div>
-                </div>
-              ))}
-            </div>
-            <div className="modal-actions">
-              <button className="btn btn-secondary" onClick={()=>setEditPlan(null)}>Cancelar</button>
-              <button className="btn btn-primary" disabled={!editPlan.planId} onClick={()=>activatePlan(editPlan.userId, editPlan.planId)}>✓ Ativar Plano</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {confirmDel && (
-        <div className="overlay" onClick={()=>setConfirmDel(null)}>
-          <div className="modal" onClick={e=>e.stopPropagation()}>
-            <div className="modal-title">Excluir conta?</div>
-            <div className="modal-sub">Excluir a conta de <strong>{confirmDel.name}</strong>? Ação irreversível.</div>
-            <div className="modal-actions">
-              <button className="btn btn-secondary" onClick={()=>setConfirmDel(null)}>Cancelar</button>
-              <button className="btn btn-danger" onClick={()=>deleteUser(confirmDel.id)}>Excluir</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -1094,13 +1012,6 @@ function ScheduleEditor({ wedding, userId, onBack, showToast }) {
       setItems(withIds); setGenerated(true);
       await store.set(schedKey, withIds);
 
-      // Increment usage counter
-      const users = await store.get("fc-users")||[];
-      const updated = users.map(u => {
-        if (u.id!==userId || !u.plan) return u;
-        return {...u, plan:{...u.plan, used:(u.plan.used||0)+1}};
-      });
-      await store.set("fc-users", updated);
 
       showToast("Cronograma gerado com sucesso!","success");
     } catch(e) {
@@ -1571,38 +1482,35 @@ function App() {
 
   useEffect(()=>{
     (async()=>{
-      // Garante que a conta admin sempre existe
-      const users = await store.get("fc-users") || [];
-      const adminEmail = "cerimonialjuara@gmail.com";
-      if (!users.find(u => u.email === adminEmail)) {
-        const adminUser = {
-          id: "admin-silvana-2026",
-          name: "Silvana Santana",
-          email: adminEmail,
-          password: "cronograma2026",
-          createdAt: now(),
-          isAdmin: true,
-          expiresAt: null,
-          plan: { id:"admin", events:9999, used:0, activatedAt: now(), expiresAt: null }
-        };
-        await store.set("fc-users", [...users, adminUser]);
-      }
-
-      const session=await store.get("fc-session");
-      if (session){
-        const allUsers=await store.get("fc-users")||[];
-        const u=allUsers.find(x=>x.id===session.userId);
-        if (u){
-          if (isExpired(u)){ await store.del("fc-session"); setView("auth"); return; }
-          setUser(u); await loadWeddings(u.id); setView("dashboard"); return;
+      const session = await store.get("fc-session");
+      if (session?.pwd) {
+        const entry = findPwd(session.pwd);
+        if (entry && !entry.expired) {
+          const sessionUser = {
+            id: 'user-' + session.pwd,
+            name: entry.name,
+            pwd: session.pwd,
+            isAdmin: entry.isAdmin,
+            expiresAt: entry.expires,
+            plan: { id: entry.isAdmin?'admin':'client', events: entry.isAdmin?9999:99, used:0 }
+          };
+          setUser(sessionUser);
+          await loadWeddings(sessionUser.id);
+          setView("dashboard");
+          return;
         }
       }
       setView("auth");
     })();
-  },[]);
+  },[]);;
 
-  const loadWeddings=async(uid)=>{
-    const keys=await store.list(`fc-wedding-${uid}-`);
+  const loadWeddings=async(uid, isAdmin=false)=>{
+    let keys = await store.list(`fc-wedding-${uid}-`);
+    // Admin loads ALL weddings from all password users
+    if (isAdmin) {
+      const allKeys = await store.list('fc-wedding-user-');
+      keys = [...new Set([...keys, ...allKeys])];
+    }
     const list=(await Promise.all(keys.map(k=>store.get(k)))).filter(Boolean);
     list.sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt));
     setWeddings(list); return list;
@@ -1613,13 +1521,8 @@ function App() {
     toastTimer.current=setTimeout(()=>setToast(null),3500);
   };
 
-  const refreshUser = async () => {
-    const users=await store.get("fc-users")||[];
-    const u=users.find(x=>x.id===user?.id);
-    if (u) setUser(u);
-  };
-
-  const handleLogin=async(u)=>{ setUser(u); await loadWeddings(u.id); setView("dashboard"); };
+  const refreshUser=async()=>{}; // no-op in pwd-based system
+  const handleLogin=async(u)=>{ setUser(u); await loadWeddings(u.id, u.isAdmin); setView("dashboard"); };
   const handleLogout=async()=>{ await store.del("fc-session"); setUser(null); setWeddings([]); setView("auth"); };
   const handleNew=()=>{ setEditing(null); setView("form"); };
   const handleEdit=(w)=>{ setEditing(w); setView("form"); };
